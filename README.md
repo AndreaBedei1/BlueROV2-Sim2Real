@@ -10,7 +10,9 @@ Study how faithfully an underwater simulation can reproduce the dynamics and sen
 
 ## Current status
 
-**Phase 1 — Platform reconnaissance and literature review: documentarily completed, with physical checks still open.**
+**Phase 1 — Platform reconnaissance and literature review: completed for the planned phase gate; remaining physical measurements are tracked.**
+
+**Phase 2 — Minimal ArduSub SITL ↔ HoloOcean verification: planned and documented, not yet implemented or tested.** See [Phase 2 plan](docs/phase2/README.md).
 
 Work performed:
 - Inventory of the modified BlueROV2 Heavy, its onboard software, sensors and accessories.
@@ -24,13 +26,13 @@ Work performed:
 
 ## Vehicle and simulator
 
-The physical platform is a modified BlueROV2 Heavy with eight thrusters, Raspberry Pi, Navigator and ArduSub, plus additional sensing and manipulation equipment. Geometry, exact thruster orientation, actuator signs, sensor mounts and calibration parameters require further verification before assuming physical equivalence with a stock simulated vehicle.
+The physical platform is a modified BlueROV2 Heavy with eight thrusters, Raspberry Pi, Navigator and ArduSub, plus additional sensing and manipulation equipment. The **four horizontal thrusters are mounted at a verified 30° angle**. Individual thruster/channel mappings, actuator signs, sensor mounts and calibration parameters still require verification before assuming physical equivalence with a stock simulated vehicle.
 
 The initial simulator target is **HoloOcean**, subject to appropriate validation of physics, timing, actuation and sensor representations.
 
 ## Future research
 
-The long-term plan includes ArduSub SITL integration, a shared autonomy interface, calibration using real measurements and quantitative sim-to-real evaluation. These are **planned activities, not completed results**.
+The next development milestone is a **PC-only minimal ArduSub SITL ↔ HoloOcean depth-control test**. The longer-term plan includes a shared autonomy interface, calibration using real measurements and quantitative sim-to-real evaluation. These are **planned activities, not completed results**.
 
 A possible future development is a **separate Raspberry Pi-based development replica** for software and integration studies. A companion-computer replica alone does not reproduce the Navigator flight controller, ESCs or physical sensors; those components must be treated separately.
 
@@ -45,5 +47,10 @@ Primary background includes:
 - Ng and Krieg (2024), BlueROV2 SITL dynamics. https://doi.org/10.3390/app14177453
 - Orjales et al. (2025), experimental BlueROV2 digital-twin calibration. https://doi.org/10.3390/app15137085
 - Potokar et al. (2024), HoloOcean marine robotics simulator. https://doi.org/10.1109/JOE.2024.3410290
+
+## Documentation
+
+- [Phase 1 — findings and outstanding physical checks](docs/phase1/README.md)
+- [Phase 2 — minimal SITL–HoloOcean connection and acceptance tests](docs/phase2/README.md)
 
 This repository is a research work in progress.
