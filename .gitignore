@@ -1,0 +1,55 @@
+# Sensitive rover and acquisition records: keep out of this public repository.
+secrets/
+credentials/
+private/
+raw_data/
+data/raw/
+logs/
+onboard_backups/
+backups/
+*.BIN
+*.bin
+*.tlog
+*.svlog
+*.bag
+*.db3
+*.pcap
+*.pcapng
+*.img
+*.img.xz
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Build and simulation artifacts
+build/
+dist/
+artifacts/
+results/
+.cache/
+*.log
+
+# LaTeX intermediate files
+*.aux
+*.bcf
+*.blg
+*.bbl
+*.fdb_latexmk
+*.fls
+*.run.xml
+*.synctex.gz
+*.toc
+*.out
+
+# OS
+.DS_Store
+Thumbs.db
