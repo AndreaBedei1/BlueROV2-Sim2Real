@@ -7,7 +7,7 @@
 ### Physical platform
 
 - The laboratory vehicle is a **modified BlueROV2 Heavy**, not a stock, unmodified vehicle.
-- The eight-thruster configuration is consistent with four horizontal and four vertical thrusters. The effective mounting angles, wiring, and physical force signs still need mechanical confirmation.
+- The vehicle has eight thrusters: **four horizontal thrusters in a verified 30-degree vectored mounting configuration**, plus **four vertical thrusters**. The 30-degree angle was checked on the physical vehicle by the project owner. Individual thruster positions, wiring, motor-channel mapping, propeller directions and force signs have not yet been independently documented.
 - The platform includes a Raspberry Pi companion computer, a Navigator flight controller, BlueOS and ArduSub.
 - Add-on components documented during reconnaissance include a forward camera, acoustic sensors (Cerulean Surveyor 240-16 and Ping1D), lighting, a front manipulator/gripper and the tether. Their exact installation details and influence on dynamics are not fully measured.
 - ROVL/acoustic positioning was identified as relevant but availability of a calibrated independent underwater position reference is unresolved.
@@ -45,7 +45,7 @@ The potential scientific contribution is therefore a **controlled, reproducible 
 
 ## Unresolved items
 
-1. Confirm each thruster's physical position, angle, propeller direction, control channel and output sign.
+1. Confirm each thruster's physical position, propeller direction, control channel and output sign. **The 30-degree horizontal mounting angle is verified and no longer an open question.**
 2. Identify exact wiring and geometry of all onboard sensors and add-on equipment, including the gripper.
 3. Record vehicle mass, buoyancy arrangement and attachment geometry to support later modeling.
 4. Verify sensor interfaces and whether ROVL can provide an independent underwater position reference.
@@ -54,7 +54,7 @@ The potential scientific contribution is therefore a **controlled, reproducible 
 7. Preserve an independently recoverable, access-controlled copy of the original platform configuration.
 8. Confirm that each simulator baseline uses an auditable build and correctly implemented physics.
 
-These are known follow-up checks. Measuring hydrodynamic coefficients and executing real-versus-simulation trials belong to later phases.
+These are known follow-up checks and remain recorded after Phase 1. Under the original research plan, Phase 1 completion requires identifying integration prerequisites and open questions, not performing all calibration measurements. **Phase 2 may now begin on the development PC only.** Measuring hydrodynamic coefficients and executing real-versus-simulation trials belong to later phases.
 
 ## Public versus private records
 
