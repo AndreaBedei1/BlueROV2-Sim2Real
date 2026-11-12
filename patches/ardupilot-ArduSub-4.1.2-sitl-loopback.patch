@@ -1,0 +1,27 @@
+diff --git a/libraries/AP_HAL_SITL/SITL_State.cpp b/libraries/AP_HAL_SITL/SITL_State.cpp
+index fc64d65..2b423a3 100644
+--- a/libraries/AP_HAL_SITL/SITL_State.cpp
++++ b/libraries/AP_HAL_SITL/SITL_State.cpp
+@@ -124,7 +124,8 @@ void SITL_State::_setup_fdm(void)
+         fprintf(stderr, "Aborting launch...\n");
+         exit(1);
+     }
+-    if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
++    // BlueROV2-Sim2Real: RC input on loopback only (shared workstation)
++    if (!_sitl_rc_in.bind("127.0.0.1", _rcin_port)) {
+         fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
+         fprintf(stderr, "Aborting launch...\n");
+         exit(1);
+diff --git a/libraries/AP_HAL_SITL/UARTDriver.cpp b/libraries/AP_HAL_SITL/UARTDriver.cpp
+index 86e6d56..4617888 100644
+--- a/libraries/AP_HAL_SITL/UARTDriver.cpp
++++ b/libraries/AP_HAL_SITL/UARTDriver.cpp
+@@ -304,6 +304,8 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
+             _listen_sockaddr.sin_port = htons(_sitlState->base_port() + port);
+         }
+         _listen_sockaddr.sin_family = AF_INET;
++        // BlueROV2-Sim2Real: listen on loopback only (shared workstation)
++        _listen_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+ 
+         _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+         if (_listen_fd == -1) {

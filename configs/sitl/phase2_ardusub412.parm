@@ -1,0 +1,43 @@
+# ArduSub 4.1.2 SITL overlay for the Phase 2 HoloOcean bridge.
+# Loaded after Tools/autotest/default_params/sub.parm (ArduPilot), which is
+# kept unchanged. These are SIMULATION parameters only: they were NOT read
+# from, and must NOT be written to, the real vehicle.
+
+# Eight-thruster vectored frame, as on the laboratory vehicle (FRAME_CONFIG=2).
+# The ArduSub default is 1 (SUB_FRAME_VECTORED, six thrusters).
+FRAME_CONFIG     2
+
+# Motor n on output n, as on the laboratory vehicle. sub.parm assigns output 8
+# to the camera tilt (SERVO8_FUNCTION 7), which would leave motor 8 unconnected.
+SERVO1_FUNCTION  33
+SERVO2_FUNCTION  34
+SERVO3_FUNCTION  35
+SERVO4_FUNCTION  36
+SERVO5_FUNCTION  37
+SERVO6_FUNCTION  38
+SERVO7_FUNCTION  39
+SERVO8_FUNCTION  40
+MNT_TYPE         0
+
+# Logical simulated thrusters: positive command = positive mixing contribution.
+# The real vehicle uses -1 on motors 1, 2, 5, 8 to compensate for propeller
+# handedness; that physical property does not exist in the simulated model.
+MOT_1_DIRECTION  1
+MOT_2_DIRECTION  1
+MOT_3_DIRECTION  1
+MOT_4_DIRECTION  1
+MOT_5_DIRECTION  1
+MOT_6_DIRECTION  1
+MOT_7_DIRECTION  1
+MOT_8_DIRECTION  1
+
+# Control loop at 200 Hz, as recorded on the vehicle (also the 4.1.2 Sub default).
+SCHED_LOOP_RATE  200
+
+# No GPS underwater (parity with the vehicle; SITL would otherwise simulate one).
+SIM_GPS_DISABLE  1
+
+# Distinct MAVLink system id so that this SITL can never be mistaken for the vehicle.
+SYSID_THISMAV    17
+
+LOG_DISARMED     0

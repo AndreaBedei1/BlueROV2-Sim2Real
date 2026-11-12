@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bluerov2-sim2real"
+version = "0.2.0"
+description = "Phase 2: minimal ArduSub SITL <-> HoloOcean connection for a modified BlueROV2 Heavy"
+requires-python = ">=3.9"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+sim = ["holoocean @ git+https://github.com/byu-holoocean/HoloOcean.git@v2.3.0#subdirectory=client"]
+test = ["pytest", "pymavlink==2.4.41", "psutil"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
