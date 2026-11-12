@@ -25,3 +25,44 @@ index 86e6d56..4617888 100644
  
          _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
          if (_listen_fd == -1) {
+diff --git a/libraries/SITL/SIM_Aircraft.cpp b/libraries/SITL/SIM_Aircraft.cpp
+index aea622c..000bc0d 100644
+--- a/libraries/SITL/SIM_Aircraft.cpp
++++ b/libraries/SITL/SIM_Aircraft.cpp
+@@ -357,7 +357,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
+     fdm.is_lock_step_scheduled = lock_step_scheduled;
+     fdm.latitude  = location.lat * 1.0e-7;
+     fdm.longitude = location.lng * 1.0e-7;
+-    fdm.altitude  = location.alt * 1.0e-2;
++    // BlueROV2-Sim2Real: full-precision altitude (location.alt is truncated to 1 cm,
++    // which quantises the simulated depth sensor more coarsely than its noise)
++    fdm.altitude  = home.alt * 1.0e-2 - position.z;
+     fdm.heading   = degrees(atan2f(velocity_ef.y, velocity_ef.x));
+     fdm.speedN    = velocity_ef.x;
+     fdm.speedE    = velocity_ef.y;
+diff --git a/libraries/SITL/SIM_JSON.cpp b/libraries/SITL/SIM_JSON.cpp
+index 8ec04a7..e826c7c 100644
+--- a/libraries/SITL/SIM_JSON.cpp
++++ b/libraries/SITL/SIM_JSON.cpp
+@@ -84,6 +84,11 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
+ {
+     sock.set_blocking(false);
+     sock.reuseaddress();
++    // BlueROV2-Sim2Real: receive physics replies on loopback only (shared workstation);
++    // without an explicit bind the ephemeral socket listens on 0.0.0.0.
++    if (!sock.bind("127.0.0.1", 0)) {
++        printf("JSON: unable to bind 127.0.0.1\n");
++    }
+ 
+     if (strcmp("127.0.0.1",address) != 0) {
+         target_ip = address;
+@@ -338,7 +343,8 @@ void JSON::recv_fdm(const struct sitl_input &input)
+     } else {
+         deltat = state.timestamp_s - last_timestamp_s;
+     }
+-    time_now_us += deltat * 1.0e6;
++    // BlueROV2-Sim2Real: round instead of truncating (truncation drifts ~8 ms per 30 min at 200 Hz)
++    time_now_us += (uint64_t)llround(deltat * 1.0e6);
+ 
+     if (is_positive(deltat) && deltat < 0.1) {
+         // time in us to hz

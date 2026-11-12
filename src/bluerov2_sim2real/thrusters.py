@@ -109,14 +109,26 @@ class ThrusterModel:
     the first Test E run: 25 % of steps saturated). The T200 forward/reverse
     ratio is therefore kept and scaled to the simulator limit:
     28.75 N forward, 28.75 * 39.9 / 51.4 = 22.32 N reverse. This
-    underestimates the real thrust authority by a factor ~0.56.
+    underestimates the real thrust authority (by ~0.56 at full command; the
+    real T200 curve is nonlinear with a dead band, so the ratio varies).
+    Positive command is assumed to be the strong (forward) side of every
+    motor, an assumption about the logical vehicle only.
+
+    Even with this scaling the 45 deg HoloOcean horizontals cannot deliver
+    every 30 deg request (full logical surge 4*28.75*cos30 = 99.6 N vs
+    4*28.75*cos45 = 81.3 N available); the allocator then reports saturation.
+
+    PWM values outside [1100, 1900] us (ArduSub's MOT_PWM_MIN/MAX on the
+    vehicle; SITL emits 1000 us on motor outputs before the motors are
+    enabled) are treated as "no valid signal" -> unpowered, as an ESC would.
     """
+    pwm_min: int = 1100
+    pwm_max: int = 1900
     max_forward_n: float = HOLO_MAX_THRUST_N
     max_reverse_n: float = HOLO_MAX_THRUST_N * 39.9 / 51.4
 
-    @staticmethod
-    def pwm_to_command(pwm: float) -> float:
-        if pwm <= 0:                       # channel not output by SITL: motor unpowered
+    def pwm_to_command(self, pwm: float) -> float:
+        if pwm < self.pwm_min or pwm > self.pwm_max:   # 0 = not output; 1000 = motors not enabled
             return 0.0
         return float(np.clip((pwm - PWM_NEUTRAL) / PWM_HALF_RANGE, -1.0, 1.0))
 
@@ -206,9 +218,48 @@ class HoloAllocator:
         """
         f0 = np.zeros(8) if nominal is None else np.asarray(nominal, dtype=float)
         req = f0 + self.B_pinv @ (wrench - self.B @ f0)
-        forces = np.clip(req, -self.max_thrust, self.max_thrust)
+        forces = req.copy()
+        saturated = False
+        for idx, n in self._groups:
+            g = forces[idx]
+            if np.max(np.abs(g)) <= self.max_thrust + 1e-9:
+                continue
+            # 1) move along the group's null space to minimise the largest force (wrench unchanged)
+            g = g + _minmax_shift(g, n) * n
+            # 2) if still above the clamp, scale the whole group: its partial wrench keeps its
+            #    direction (verticals act only on Fz, Mx, My; horizontals only on Fx, Fy, Mz)
+            peak = np.max(np.abs(g))
+            if peak > self.max_thrust + 1e-9:
+                g = g * (self.max_thrust / peak)
+                saturated = True
+            forces[idx] = g
         return AllocationResult(
-            forces=forces, requested=req,
-            saturated=bool(np.any(np.abs(req) > self.max_thrust + 1e-9)),
+            forces=forces, requested=req, saturated=saturated,
             wrench_error=self.B @ forces - wrench,
         )
+
+    @property
+    def _groups(self):
+        """(indices, unit null-space vector) of the vertical and horizontal thruster groups."""
+        if not hasattr(self, "_groups_cache"):
+            groups = []
+            for idx in (np.arange(0, 4), np.arange(4, 8)):
+                _, s, vt = np.linalg.svd(self.B[:, idx])
+                n = vt[-1]
+                assert s[-1] < 1e-9 * s[0] or len(s) < 4
+                assert np.allclose(self.B[:, idx] @ n, 0, atol=1e-9)
+                groups.append((idx, n / np.linalg.norm(n)))
+            self._groups_cache = groups
+        return self._groups_cache
+
+
+def _minmax_shift(f: np.ndarray, n: np.ndarray) -> float:
+    """argmin_s max_i |f_i + s n_i| (convex, piecewise linear: optimum at a line crossing)."""
+    lines = [(a, b) for fi, ni in zip(f, n) for a, b in ((ni, fi), (-ni, -fi))]
+    cands = [0.0]
+    for i in range(len(lines)):
+        for j in range(i + 1, len(lines)):
+            (a1, b1), (a2, b2) = lines[i], lines[j]
+            if abs(a1 - a2) > 1e-12:
+                cands.append((b2 - b1) / (a1 - a2))
+    return float(min(cands, key=lambda s: np.max(np.abs(f + s * n))))

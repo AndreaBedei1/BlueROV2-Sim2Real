@@ -133,8 +133,11 @@ def _scan_floats(s: str, n: int):
 def ardusub412_parse(line: str) -> dict:
     """Parse a line the way ``JSON::parse_sensors`` (4.1.2) does.
 
-    Returns a dict of the fields SITL would accept; raises ProtocolError where
-    SITL would print "Failed to find ..." / "Failed to parse ..." and reject.
+    Stricter than SITL on purpose: raises ProtocolError on any missing
+    mandatory field or vector parse failure. (SITL 4.1.2 rejects a line only
+    when the bitmask is 0 or has no attitude; after a vector parse failure it
+    may accept a partial update with stale fields.) Used to check that our
+    encoder never relies on that lenient behaviour.
     """
     result = {}
     for section, key, kind, required in _KEYTABLE:

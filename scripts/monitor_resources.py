@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Sample CPU/RAM of the given processes (and their children) and global GPU use.
+"""Sample CPU/RAM of the given processes (and their children) and MACHINE-WIDE GPU use
+(GPU figures include other users' load).
 
 Only reads information; never signals any process.
 """
@@ -30,7 +31,7 @@ def main():
     procs = {}
     with open(a.out, "w", newline="", buffering=1) as f:
         w = csv.writer(f)
-        w.writerow(["wall", "n_procs", "cpu_percent", "rss_mb", "gpu_index_util_memMiB"])
+        w.writerow(["wall", "n_procs", "cpu_percent", "rss_mb", "gpu_machine_wide_index_util_memMiB"])
         while True:
             alive = []
             for pid in a.pids:

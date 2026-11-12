@@ -61,7 +61,6 @@ def test_pwm_mapping():
     assert t.pwm_to_command(1500) == 0
     assert t.pwm_to_command(1900) == pytest.approx(1)
     assert t.pwm_to_command(1100) == pytest.approx(-1)
-    assert t.pwm_to_command(2100) == pytest.approx(1)
     assert t.pwm_to_command(0) == 0                  # channel not output -> unpowered
     assert t.command_to_thrust(1.0) == pytest.approx(HOLO_MAX_THRUST_N)          # never above the engine clamp
     assert t.command_to_thrust(-1.0) == pytest.approx(-HOLO_MAX_THRUST_N * 39.9 / 51.4)
@@ -125,3 +124,51 @@ def test_30deg_differs_from_stock_45deg_one_to_one():
     v30, v45 = LogicalVehicle(30.0), LogicalVehicle(45.0)
     pwm = [1400, 1400, 1600, 1600] + [1500] * 4 + [0] * 8        # forward: M1,M2 factor -1, M3,M4 +1
     assert v30.wrench(v30.pwm_to_thrusts(pwm))[0] > v45.wrench(v45.pwm_to_thrusts(pwm))[0] > 0
+
+
+def test_holo_geometry_matches_characterization_fixture():
+    import json
+    from pathlib import Path
+    fx = json.loads((Path(__file__).parent / "fixtures" / "characterization_200hz.json").read_text())
+    _, dirs = holo_geometry()
+    for t in fx["thrusters"]:
+        f_flu = np.asarray(t["force_per_N_world_flu"])           # vehicle at rest with identity attitude
+        f_frd = np.array([f_flu[0], -f_flu[1], -f_flu[2]])
+        assert np.allclose(f_frd / np.linalg.norm(f_frd), dirs[t["index"]], atol=1e-3), t["index"]
+        # yaw/roll/pitch rate signs (FLU) after one tick must match r x d of the model
+    pos, dirs = holo_geometry()
+    for t in fx["thrusters"]:
+        m_frd = np.cross(pos[t["index"]], dirs[t["index"]])
+        w_flu = np.asarray(t["angvel_after_tick_rad_s"])
+        w_frd = np.array([w_flu[0], -w_flu[1], -w_flu[2]])
+        for k in range(3):
+            if abs(m_frd[k]) > 1e-6:
+                assert np.sign(w_frd[k]) == np.sign(m_frd[k]), (t["index"], k)
+    assert fx["drag_applied_over_expected"] == pytest.approx(0.01, rel=0.02)
+
+
+def test_saturation_keeps_group_wrench_direction():
+    a = HoloAllocator()
+    w = np.array([150.0, 40.0, 0, 0, 0, 5.0])                     # beyond the horizontal capacity
+    r = a.allocate(w)
+    assert r.saturated and np.max(np.abs(r.forces)) <= HOLO_MAX_THRUST_N + 1e-9
+    achieved = a.B @ r.forces
+    hw, ha = w[[0, 1, 5]], achieved[[0, 1, 5]]
+    cos = np.dot(hw, ha) / (np.linalg.norm(hw) * np.linalg.norm(ha))
+    assert cos == pytest.approx(1.0, abs=1e-9)                     # scaled, not distorted
+    assert np.allclose(achieved[[2, 3, 4]], 0, atol=1e-9)
+
+
+def test_null_space_shift_avoids_needless_saturation():
+    # reviewer case: element-wise clipping saturated although an exact solution within limits exists
+    v, a = LogicalVehicle(), HoloAllocator()
+    pwm = [1150, 1250, 1850, 1750] + [1500] * 4 + [0] * 8
+    thr = v.pwm_to_thrusts(pwm)
+    r = a.allocate(v.wrench(thr), nominal=v.nominal_holo_forces(thr))
+    assert not r.saturated and np.allclose(r.wrench_error, 0, atol=1e-9)
+
+
+def test_out_of_range_pwm_is_unpowered():
+    t = ThrusterModel()
+    assert t.pwm_to_command(1000) == 0 and t.pwm_to_command(2000) == 0
+    assert t.pwm_to_command(1100) == pytest.approx(-1) and t.pwm_to_command(1900) == pytest.approx(1)

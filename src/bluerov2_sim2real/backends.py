@@ -5,9 +5,9 @@ scheme 0) through ``HoloAllocator`` and adds the drag compensation.
 ``MockBackend`` is a small rigid-body integrator used to test the protocol and
 the bridge logic without HoloOcean (Test B).
 
-Both expose ``dt``, ``reset()``, ``step(wrench_frd) -> Observation``,
-``hold`` (kinematic hold at a fixed pose, used during SITL boot so that the
-SITL barometer is referenced at the water surface) and ``close()``.
+Both expose ``dt``, ``ticks``, ``step(wrench_frd, nominal) -> Observation``,
+``hold`` / ``release()`` (kinematic hold used during SITL boot, see
+``HoldSchedule``) and ``close()``.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from typing import Optional
 import numpy as np
 
 from . import drag as dragmod
-from .frames import T_FLIP, flu_to_frd, nwu_to_ned, quat_wxyz_from_matrix, rot_nwu_flu_to_ned_frd
+from .frames import T_FLIP, nwu_to_ned, quat_wxyz_from_matrix, rot_nwu_flu_to_ned_frd
 from .thrusters import HoloAllocator
 
 GRAVITY = 9.8   # HoloOcean world gravity (UE -980 cm/s^2), measured at rest
@@ -68,31 +68,65 @@ def holo_scenario(tps: int, start_location, world: str = "SimpleUnderwater") -> 
     }
 
 
+@dataclass
+class HoldSchedule:
+    """Kinematic hold used while SITL boots (sim seconds from start).
+
+    0 .. surface_s: CoM at the water surface, so that the SITL barometer is
+    referenced at the surface, as on the real vehicle before a dive.
+    Then a slow kinematic descent at ``descent_rate`` to ``depth`` and a hold
+    there until the bridge releases the vehicle: the run starts fully
+    submerged and at rest (a defined state) instead of from a half-submerged
+    body sinking under the engine's partial-buoyancy model.
+    """
+    surface_s: float = 8.0
+    descent_rate: float = 0.1     # m/s
+    depth: float = 1.0            # m
+
+    def at(self, t: float):
+        """(depth, vertical speed down) of the held CoM at sim time t."""
+        if t <= self.surface_s:
+            return 0.0, 0.0
+        d = (t - self.surface_s) * self.descent_rate
+        if d >= self.depth:
+            return self.depth, 0.0
+        return d, self.descent_rate
+
+
 class HoloOceanBackend:
     def __init__(self, tps: int = 200, start_location=(0.0, 0.0, 0.0), drag_compensation: bool = True,
-                 world: str = "SimpleUnderwater", hold_pose: Optional[tuple] = None):
-        import holoocean  # imported lazily: the mock path must not need it
+                 world: str = "SimpleUnderwater", hold: Optional[HoldSchedule] = None, holoocean_module=None):
+        if holoocean_module is None:
+            import holoocean as holoocean_module  # lazy: the mock path must not need it
         self.dt = 1.0 / tps
         self.tps = tps
         self.start_location = np.asarray(start_location, dtype=float)
         self.drag_compensation = drag_compensation
         self.allocator = HoloAllocator()
-        self.hold = hold_pose is not None
-        self.hold_pose = hold_pose or (tuple(start_location), (0.0, 0.0, 0.0))
-        self.env = holoocean.make(scenario_cfg=holo_scenario(tps, start_location, world),
-                                  show_viewport=False, verbose=False)
+        self.schedule = hold
+        self.hold = hold is not None
+        self.env = holoocean_module.make(scenario_cfg=holo_scenario(tps, start_location, world),
+                                         show_viewport=False, verbose=False)
         self.agent = self.env.agents["auv0"]
         self.ticks = 0
         self._last_vel_world = np.zeros(3)
         self._last_R = np.eye(3)
         self._last_depth = -float(self.start_location[2])
 
+    @property
+    def engine_pid(self) -> Optional[int]:
+        proc = getattr(self.env, "_world_process", None)
+        return getattr(proc, "pid", None)
+
+    def release(self):
+        self.hold = False
+
     def close(self):
         if self.env is not None:
             self.env.__exit__(None, None, None)
             self.env = None
 
-    def _observe(self, s, extras) -> Observation:
+    def _observe(self, s, extras, held_vel_down: Optional[float] = None) -> Observation:
         pose = np.asarray(s["PoseSensor"], dtype=float)
         dyn = np.asarray(s["DynamicsSensor"], dtype=float)
         imu = np.asarray(s["IMUSensor"], dtype=float)
@@ -100,39 +134,57 @@ class HoloOceanBackend:
             raise FloatingPointError("non-finite HoloOcean sensor output")
         R_nwu_flu = pose[0:3, 0:3]
         p_nwu = pose[0:3, 3]
+        a_nwu = dyn[0:3]                  # DynamicsSensor at COM: world, m/s^2, no gravity
         v_nwu = dyn[3:6]
+        gyro = imu[1].copy()              # IMUSocket is FRD; angular rate is the same at any point
+        if held_vel_down is not None:     # kinematic hold: report the imposed motion, not solver residue
+            v_nwu = np.array([0.0, 0.0, -held_vel_down])
+            a_nwu = np.zeros(3)
+            gyro = np.zeros(3)
         self._last_vel_world = v_nwu.copy()
         self._last_R = R_nwu_flu
         pos = nwu_to_ned(p_nwu - np.array([self.start_location[0], self.start_location[1], 0.0]))
         self._last_depth = float(pos[2])
+        # specific force at the CoM, body FRD: f = T R^T (a - g),  g_NWU = (0, 0, -9.8)
+        f_frd = T_FLIP @ (R_nwu_flu.T @ (a_nwu - np.array([0.0, 0.0, -GRAVITY])))
+        extras["imu_socket_accel_frd"] = imu[0].copy()
         return Observation(
             t_sim=self.ticks * self.dt,
             position_ned=pos,
             velocity_ned=nwu_to_ned(v_nwu),
             R_ned_frd=rot_nwu_flu_to_ned_frd(R_nwu_flu),
-            gyro_frd=imu[1].copy(),            # IMUSocket is FRD
-            accel_frd=imu[0].copy(),           # specific force, FRD
+            gyro_frd=gyro,
+            accel_frd=f_frd,
             extras=extras,
         )
+
+    def drag_compensation_body(self) -> np.ndarray:
+        """Missing drag (body FRD force) for the current step, from the last observed state."""
+        frac = dragmod.submerged_fraction_estimate(self._last_depth)
+        comp_world = dragmod.missing_drag_world(self._last_vel_world, frac)
+        # world NWU force -> body FRD:  F_frd = T R_nwu_flu^T F_nwu
+        return T_FLIP @ (self._last_R.T @ comp_world), comp_world
 
     def step(self, wrench_frd: np.ndarray, nominal: Optional[np.ndarray] = None) -> Observation:
         extras = {"held": self.hold}
         wrench = np.asarray(wrench_frd, dtype=float).copy()
         comp_world = np.zeros(3)
         if self.drag_compensation and not self.hold:
-            frac = dragmod.submerged_fraction_estimate(self._last_depth)
-            comp_world = dragmod.missing_drag_world(self._last_vel_world, frac)
-            # world NWU force -> body FRD:  F_frd = T R_nwu_flu^T F_nwu
-            wrench[0:3] += T_FLIP @ (self._last_R.T @ comp_world)
+            comp_body, comp_world = self.drag_compensation_body()
+            wrench[0:3] += comp_body
+        if self.hold:
+            depth, vdown = self.schedule.at((self.ticks + 1) * self.dt)
+            loc = [self.start_location[0], self.start_location[1], -depth]
+            self.agent.set_physics_state(loc, [0, 0, 0], [0, 0, -vdown], [0, 0, 0])
+            s = self.env.step(np.zeros(8))
+            extras.update(holo_forces=np.zeros(8), saturated=False, wrench_error=np.zeros(6),
+                          drag_comp_world_nwu=comp_world)
+            self.ticks += 1
+            return self._observe(s, extras, held_vel_down=vdown)
         alloc = self.allocator.allocate(wrench, nominal=nominal)
         extras.update(holo_forces=alloc.forces, saturated=alloc.saturated,
                       wrench_error=alloc.wrench_error, drag_comp_world_nwu=comp_world)
-        if self.hold:
-            loc, rpy = self.hold_pose
-            self.agent.set_physics_state(list(loc), list(rpy), [0, 0, 0], [0, 0, 0])
-            s = self.env.step(np.zeros(8))
-        else:
-            s = self.env.step(alloc.forces)
+        s = self.env.step(alloc.forces)
         self.ticks += 1
         return self._observe(s, extras)
 
@@ -161,6 +213,9 @@ class MockBackend:
 
     def close(self):
         pass
+
+    def release(self):
+        self.hold = False
 
     def step(self, wrench_frd: np.ndarray, nominal: Optional[np.ndarray] = None) -> Observation:
         w = np.asarray(wrench_frd, dtype=float)

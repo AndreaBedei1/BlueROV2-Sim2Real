@@ -8,17 +8,23 @@ fix multiplies the force by ``UEUnitsPerMeter`` (=100). That build exists only
 as a Windows package, so on Linux the bridge adds the missing 0.99 fraction as
 an extra force at the centre of mass, through the thruster allocation.
 
-Equivalence with the patched engine holds while the compensation is not
-clipped by thruster saturation and the vehicle is fully submerged; it uses
-the velocity sensed at the end of the previous tick (the engine uses the
-velocity at the start of the current tick, i.e. the same value). Ocean
-currents are assumed zero. The engine's additional Unreal linear damping
-(SetLinearDamping(1.0), SetAngularDamping(0.75)) is present in both builds and
-is not modified.
+Equivalence with the corrected engine is argued from the source, not
+measured on a corrected Linux binary (none exists): the engine applies drag
+at the centre of mass from the CoM world velocity read in the pre-physics
+tick (agents tick in TG_PrePhysics, sensors in TG_PostPhysics), and the
+bridge uses the CoM velocity observed after the previous tick, i.e. the same
+state. It holds only while the compensation is not reduced by thruster
+saturation and the vehicle is fully submerged (near the surface the engine
+uses a sampled submerged fraction, the bridge a linear 0..0.3 m ramp).
+Ocean currents are assumed zero. Rotational hydrodynamic damping does not
+exist in HoloOcean (only Unreal's SetAngularDamping(0.75)) and is not added.
+The engine's Unreal linear damping (SetLinearDamping(1.0)) is present in both
+builds and is not modified. The intended engine drag itself (Cd*A = 0.36 m^2
+in every axis) is not a validated BlueROV2 model.
 
-The applied/expected ratio of the stock binary was measured as 0.0099-0.0097
-(``scripts/characterize_holoocean.py``); with compensation the bridge test
-suite checks that the total matches the intended drag.
+Evidence: the stock Linux binary applies 0.01 of the intended quadratic
+drag (``scripts/characterize_holoocean.py``); ``tests/test_backend_fake.py``
+checks frame and sign of the compensation force.
 """
 from __future__ import annotations
 

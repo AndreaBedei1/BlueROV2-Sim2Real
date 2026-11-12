@@ -130,7 +130,10 @@ def physics(tps):
         out["timestep"] = {
             "force_total_N": 4 * f_each,
             "dv_z": float(dvz),
+            # dv*m/F; equals dt only without Unreal linear damping: with SetLinearDamping(1.0)
+            # the expected value is dt/(1+dt) (PhysX), so the ratio below is ~1-dt, not a timestep error
             "dt_physical_est": float(dvz * MASS_KG / (4 * f_each)),
+            "expected_with_unreal_damping": dt / (1.0 + dt),
         }
         out["timestep"]["ratio_physical_over_client"] = out["timestep"]["dt_physical_est"] / dt
         # 3. drag: one free tick from an imposed surge velocity
@@ -152,6 +155,7 @@ def physics(tps):
             "fit_quadratic_1_per_m": float(k_quad),
             "expected_quadratic_correct_drag": K_QUAD_EXPECTED,
             "applied_over_expected": float(k_quad / K_QUAD_EXPECTED),
+            "note": "fit of decel = c_lin*v + k_quad*v^2 over one tick; c_lin ~ Unreal linear damping 1/s",
         }
         # 4. per-thruster response from rest, one tick of 10 N
         thr = []
@@ -165,7 +169,7 @@ def physics(tps):
             thr.append({
                 "index": j,
                 "force_per_N_world_flu": (force_dir).round(4).tolist(),
-                "angvel_after_tick_deg_s": np.asarray(d["angvel"]).round(5).tolist(),
+                "angvel_after_tick_rad_s": np.asarray(d["angvel"]).round(5).tolist(),
             })
         out["thrusters"] = thr
     finally:

@@ -53,3 +53,12 @@ results/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local tool state and packaging
+.claude/
+*.egg-info/
+mav.parm
+*.params
+*.ulg
+eeprom.bin
+*.sh.new

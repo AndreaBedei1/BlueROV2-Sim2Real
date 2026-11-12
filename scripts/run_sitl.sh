@@ -33,8 +33,14 @@ cd "$RUN_DIR/sitl"
   echo "ardupilot_commit=$(git -C "$AP" rev-parse HEAD)"
   echo "ardupilot_diff_sha256=$(git -C "$AP" diff | sha256sum | cut -d' ' -f1)"
   echo "instance=$INSTANCE"
+  echo "sub_parm_sha256=$(sha256sum "$AP/Tools/autotest/default_params/sub.parm" | cut -d' ' -f1)"
+  echo "overlay_sha256=$(sha256sum "$REPO/configs/sitl/phase2_ardusub412.parm" | cut -d' ' -f1)"
+  echo "loopback_patch_sha256=$(sha256sum "$REPO/patches/ardupilot-ArduSub-4.1.2-sitl-loopback.patch" | cut -d' ' -f1)"
+  echo "patch_matches_checkout=$( [ "$(git -C "$AP" diff | sha256sum | cut -d' ' -f1)" = "$(sha256sum < "$REPO/patches/ardupilot-ArduSub-4.1.2-sitl-loopback.patch" | cut -d' ' -f1)" ] && echo yes || echo NO)"
 } > sitl_manifest.txt
 # Fixed public test location (ArduPilot CMAC default), altitude 0 = water surface.
-exec "$BIN" --model JSON:127.0.0.1 --speedup 1 -I "$INSTANCE" -w \
-  --home -35.363261,149.165230,0,0 \
-  --defaults "$AP/Tools/autotest/default_params/sub.parm,$REPO/configs/sitl/phase2_ardusub412.parm"
+CMD=("$BIN" --model JSON:127.0.0.1 --speedup 1 -I "$INSTANCE" -w
+     --home -35.363261,149.165230,0,0
+     --defaults "$AP/Tools/autotest/default_params/sub.parm,$REPO/configs/sitl/phase2_ardusub412.parm")
+echo "command=${CMD[*]}" >> sitl_manifest.txt
+exec "${CMD[@]}"

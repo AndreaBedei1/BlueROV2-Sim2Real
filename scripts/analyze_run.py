@@ -64,23 +64,28 @@ def clock_check(F, mav):
     srv = [s for k, s in enumerate(srv) if k > 0 and any(s[f"servo{i}_raw"] != srv[k - 1][f"servo{i}_raw"] for i in range(1, 9))]
     t = F["t_sim"]
     pwm = np.column_stack([F[f"pwm{i}"] for i in range(1, 9)])
+    dt = float(np.median(np.diff(t)))
     res = {}
-    for offset_frames in (-40, -4, -2, -1, 0, 1, 2, 4, 40):
+    for offset_frames in (-3, -2, -1, 0, 1, 2, 3):
         ok = n = 0
         for s in srv:
             ts = s["time_usec"] / 1e6
-            k = np.searchsorted(t, ts) + offset_frames
-            if 0 <= k < len(t) and abs(t[min(k, len(t) - 1)] - ts) < 0.02:
+            k = int(np.argmin(np.abs(t - ts))) + offset_frames
+            if abs(t[int(np.argmin(np.abs(t - ts)))] - ts) <= 0.5 * dt and 0 <= k < len(t):
                 n += 1
                 ok += int(np.all(pwm[k] == [s[f"servo{i}_raw"] for i in range(1, 9)]))
         res[offset_frames] = (ok, n)
-    best = max(res, key=lambda o: res[o][0])
-    ok, n = res[best]
-    return {"changing_samples": n, "best_offset_frames": best, "match_fraction": ok / n if n else None,
+    top = max(v[0] for v in res.values())
+    best = [o for o, v in res.items() if v[0] == top]
+    n = res[0][1]
+    return {"changing_samples": n, "offsets_with_best_match": best,
+            "best_match_fraction": top / n if n else None,
+            "note": "row t_sim is the time after the step that applied the row's PWM; SITL time_usec "
+                    "of SERVO_OUTPUT_RAW is the time the output was computed, i.e. one frame earlier",
             "all_offsets": {str(k): v for k, v in res.items()}}
 
 
-def test_c(run, F, marks):
+def eval_c(run, F, marks):
     v = LogicalVehicle()
     out = {"motor_test": [], "pilot": []}
     starts = {}
@@ -140,16 +145,29 @@ def test_c(run, F, marks):
                 else:
                     ok, meas = (gmean[2] > 0) == (val > 0), float(gmean[2])
                 out["pilot"].append({"axis": axis, "stick": val, "measured": meas, "pass": bool(ok)})
+    gz = np.abs(F["gz"])
+    out["max_abs_yaw_rate_rad_s"] = float(gz.max())
+    out["note"] = ("expected directions come from the same logical vehicle model the bridge uses: the test "
+                   "verifies channel order, allocation and sign plumbing end-to-end, not the vehicle model. "
+                   "Rotation magnitudes are a HoloOcean model property (no rotational hydrodynamic damping).")
     out["pass"] = all(x["pass"] for x in out["motor_test"]) and all(x["pass"] for x in out["pilot"]) \
         and len(out["motor_test"]) == 8 and len(out["pilot"]) == 8
     return out
 
 
-def test_de(run, F, marks):
+E_CRITERIA = {   # fixed before the final runs (2026-11-12, after the independent reviews)
+    "settle_band_m": "max(0.05 m, 5 % of the step)",
+    "max_settling_s": 20.0, "max_overshoot": "max(0.05 m, 25 % of the step)",
+    "max_final_abs_mean_error_m": 0.02, "max_abs_roll_pitch_deg": 2.0, "max_saturated_fraction": 0.01,
+}
+
+
+def eval_de(run, F, marks):
     ev = {e: t for t, e, _ in marks if e in ("test_D_start", "test_D_end", "test_E_start", "test_E_end")}
+    dt = float(np.median(np.diff(F["t_sim"])))
     res = {}
     w = window(F, ev["test_D_start"], ev["test_D_end"])
-    res["D"] = {
+    res["D1_manual_neutral"] = {
         "duration_s": float(F["t_sim"][w][-1] - F["t_sim"][w][0]),
         "depth_start": float(F["d"][w][0]), "depth_end": float(F["d"][w][-1]),
         "max_abs_horizontal_drift_m": float(np.max(np.hypot(F["n"][w] - F["n"][w][0], F["e"][w] - F["e"][w][0]))),
@@ -158,40 +176,65 @@ def test_de(run, F, marks):
         "max_abs_pitch_deg": float(np.max(np.abs(F["pitch_deg"][w]))),
         "yaw_change_deg": float(np.ptp(F["yaw_deg"][w])),
         "pwm_all_neutral": bool(all(np.all(F[f"pwm{i}"][w] == 1500) for i in range(1, 9))),
+        "meaning": "link adds no spurious force when ArduSub outputs neutral (cannot detect controller issues)",
     }
-    res["D"]["pass"] = res["D"]["pwm_all_neutral"] and res["D"]["max_abs_depth_change_m"] < 0.05 \
-        and res["D"]["max_abs_horizontal_drift_m"] < 0.05 and res["D"]["max_abs_roll_deg"] < 2 and res["D"]["max_abs_pitch_deg"] < 2
+    d1 = res["D1_manual_neutral"]
+    d1["pass"] = d1["pwm_all_neutral"] and d1["max_abs_depth_change_m"] < 0.01 \
+        and d1["max_abs_horizontal_drift_m"] < 0.01 and d1["max_abs_roll_deg"] < 0.5 and d1["max_abs_pitch_deg"] < 0.5
     targets = [(t, float(v)) for t, e, v in marks if e == "depth_target"]
+    t_first = targets[0][0] if targets else ev["test_E_end"]
+    w = window(F, ev["test_E_start"], t_first)
+    d0 = F["d"][w][0]
+    res["D2_althold_entry_hold"] = {
+        "duration_s": float(F["t_sim"][w][-1] - F["t_sim"][w][0]), "depth_at_entry": float(d0),
+        "max_abs_depth_deviation_m": float(np.max(np.abs(F["d"][w] - d0))),
+        "final_depth_deviation_m": float(F["d"][w][-1] - d0),
+        "max_abs_roll_deg": float(np.max(np.abs(F["roll_deg"][w]))),
+        "max_abs_pitch_deg": float(np.max(np.abs(F["pitch_deg"][w]))),
+        "yaw_change_deg": float(np.ptp(F["yaw_deg"][w])),
+        "meaning": "closed-loop hold right after mode entry, no target command",
+    }
+    d2 = res["D2_althold_entry_hold"]
+    d2["pass"] = d2["max_abs_depth_deviation_m"] < 0.10 and d2["max_abs_roll_deg"] < 2 and d2["max_abs_pitch_deg"] < 2
+    res["D"] = {"pass": d1["pass"] and d2["pass"]}
     steps = []
     for k, (t0, d) in enumerate(targets):
         t1 = targets[k + 1][0] if k + 1 < len(targets) else ev["test_E_end"]
         w = window(F, t0, t1)
         t, depth = F["t_sim"][w] - t0, F["d"][w]
-        d0 = depth[0]
+        d_start = depth[0]
+        amp = abs(d - d_start)
         err = depth - d
-        settle = None
-        band = max(0.05, 0.05 * abs(d - d0))
+        band = max(0.05, 0.05 * amp)
         outside = np.flatnonzero(np.abs(err) > band)
-        if outside.size == 0 or outside[-1] < len(err) - 1:
-            settle = float(t[outside[-1] + 1]) if outside.size else 0.0
+        settle = None
+        if outside.size == 0:
+            settle = 0.0
+        elif outside[-1] < len(err) - 1:
+            settle = float(t[outside[-1] + 1])
         last = t > t[-1] - 10.0
-        overshoot = float(max(0.0, np.max((depth - d) * np.sign(d - d0)))) if d != d0 else 0.0
-        steps.append({
-            "target_m": d, "start_depth_m": float(d0), "duration_s": float(t[-1]),
-            "moved_in_correct_direction": bool(np.sign(depth[min(len(depth) - 1, int(5 / 0.005))] - d0) == np.sign(d - d0)) if abs(d - d0) > 0.05 else True,
-            "settling_time_s_5pct": settle, "overshoot_m": overshoot,
+        overshoot = float(max(0.0, np.max((depth - d) * np.sign(d - d_start)))) if amp > 0 else 0.0
+        k5 = min(len(depth) - 1, int(round(5.0 / dt)))
+        s = {
+            "target_m": d, "start_depth_m": float(d_start), "duration_s": float(t[-1]),
+            "moved_in_correct_direction": bool(np.sign(depth[k5] - d_start) == np.sign(d - d_start)) if amp > 0.05 else True,
+            "settling_time_s": settle, "overshoot_m": overshoot,
             "final10s_mean_error_m": float(err[last].mean()), "final10s_rms_error_m": float(np.sqrt((err[last] ** 2).mean())),
             "max_abs_roll_deg": float(np.max(np.abs(F["roll_deg"][w]))),
             "max_abs_pitch_deg": float(np.max(np.abs(F["pitch_deg"][w]))),
             "saturated_fraction": float(F["saturated"][w].mean()),
-        })
-    res["E"] = {"steps": steps}
-    res["E"]["pass"] = all(s["moved_in_correct_direction"] and s["settling_time_s_5pct"] is not None
-                           and abs(s["final10s_mean_error_m"]) < 0.05 for s in steps)
+        }
+        s["pass"] = (s["moved_in_correct_direction"] and settle is not None and settle <= E_CRITERIA["max_settling_s"]
+                     and overshoot <= max(0.05, 0.25 * amp)
+                     and abs(s["final10s_mean_error_m"]) <= E_CRITERIA["max_final_abs_mean_error_m"]
+                     and max(s["max_abs_roll_deg"], s["max_abs_pitch_deg"]) <= E_CRITERIA["max_abs_roll_pitch_deg"]
+                     and s["saturated_fraction"] <= E_CRITERIA["max_saturated_fraction"])
+        steps.append(s)
+    res["E"] = {"criteria": E_CRITERIA, "steps": steps, "pass": bool(steps) and all(s["pass"] for s in steps)}
     return res
 
 
-def test_f(run, F, marks, summary):
+def eval_f(run, F, marks, summary):
     ev = {e: t for t, e, _ in marks if e in ("test_F_start", "test_F_end")}
     w = window(F, ev["test_F_start"], ev["test_F_end"])
     dt = np.diff(F["t_sim"][w])
@@ -268,11 +311,11 @@ def main():
     rep = {"bridge_summary": summary, "clock_check": clock_check(F, mav),
            "statustext": sorted({m["text"] for m in mav["STATUSTEXT"]})}
     if a.test == "C":
-        rep["C"] = test_c(run, F, marks)
+        rep["C"] = eval_c(run, F, marks)
     elif a.test == "DE":
-        rep.update(test_de(run, F, marks))
+        rep.update(eval_de(run, F, marks))
     else:
-        rep["F"] = test_f(run, F, marks, summary)
+        rep["F"] = eval_f(run, F, marks, summary)
     (run / "report.json").write_text(json.dumps(rep, indent=2, default=float))
     plot(run, F, marks, f"{run.name}: test {a.test}")
     print(json.dumps({k: v for k, v in rep.items() if k != "bridge_summary"}, indent=2, default=float))

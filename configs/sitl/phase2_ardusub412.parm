@@ -31,11 +31,16 @@ MOT_6_DIRECTION  1
 MOT_7_DIRECTION  1
 MOT_8_DIRECTION  1
 
-# Control loop at 200 Hz, as recorded on the vehicle (also the 4.1.2 Sub default).
+# Control loop at 200 Hz, as recorded on the vehicle (the 4.1.2 Navigator board
+# build defaults to 200; the SITL build defaults to 400). SIM_RATE_HZ only
+# bounds the frame_rate field SITL reports; physics runs at the bridge rate.
 SCHED_LOOP_RATE  200
+SIM_RATE_HZ      200
 
-# No GPS underwater (parity with the vehicle; SITL would otherwise simulate one).
+# No GPS underwater: SIM_GPS_DISABLE removes the simulated fix, GPS_TYPE 0 the
+# receiver itself (SITL otherwise detects a u-blox).
 SIM_GPS_DISABLE  1
+GPS_TYPE         0
 
 # Distinct MAVLink system id so that this SITL can never be mistaken for the vehicle.
 SYSID_THISMAV    17
@@ -93,3 +98,14 @@ ATC_RAT_YAW_IMAX 0.222
 ATC_INPUT_TC     0.15
 INS_GYRO_FILTER  20
 INS_ACCEL_FILTER 20
+
+# Further parity with the vehicle backup (hardware-inventory.it.md §8):
+# one IMU and one EKF3 lane (EK3_IMU_MASK=1), joystick gain, arming checks.
+SIM_IMU_COUNT    1
+EK3_IMU_MASK     1
+JS_GAIN_DEFAULT  0.2
+ARMING_CHECK     448
+# Vertical acceleration feed-forward: sub.parm sets 0.75; the vehicle value is
+# not recorded in the Phase 1 inventory, so the ArduSub 4.1.2 firmware default
+# (0, AC_PosControl.cpp) is used. To be confirmed from the vehicle parameters.
+PSC_ACCZ_FF      0

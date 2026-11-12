@@ -98,6 +98,21 @@ class Mission:
         self.mark("connected", f"sysid={hb.get_srcSystem()}")
         self.m.mav.request_data_stream_send(SITL_SYSID, 1, mavutil.mavlink.MAV_DATA_STREAM_ALL, 10, 1)
         self.spin(1.0)
+        self.dump_params()
+
+    def dump_params(self, timeout_wall=60.0):
+        """Record every parameter actually in effect in SITL (evidence for the run)."""
+        params, total = {}, None
+        self.m.mav.param_request_list_send(SITL_SYSID, 1)
+        w0 = time.monotonic()
+        while time.monotonic() - w0 < timeout_wall and (total is None or len(params) < total):
+            self._periodic()
+            msg = self.m.recv_match(type="PARAM_VALUE", blocking=True, timeout=0.2)
+            if msg is not None and msg.get_srcSystem() == SITL_SYSID:
+                params[msg.param_id] = msg.param_value
+                total = msg.param_count
+        (self.out / "params.json").write_text(json.dumps(dict(sorted(params.items())), indent=0))
+        self.mark("params", f"{len(params)}/{total}")
 
     def set_mode(self, name):
         self.m.mav.set_mode_send(SITL_SYSID, mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, MODES[name])
@@ -174,7 +189,7 @@ def scenario_depth(ms: Mission, a):
     ms.mark("test_D_end")
     ms.set_mode("ALT_HOLD")
     ms.mark("test_E_start")
-    ms.spin(10.0)
+    ms.spin(a.entry_hold_s)                    # Test D2: closed-loop hold right after mode entry
     for d in a.depths:
         ms.hold_depth(d, a.hold_s)
     ms.mark("test_E_end")
@@ -201,10 +216,12 @@ def main():
     ap.add_argument("scenario", choices=["axes", "depth", "soak"])
     ap.add_argument("--out", required=True)
     ap.add_argument("--instance", type=int, default=7)
-    ap.add_argument("--start-after", type=float, default=40.0, help="autopilot seconds before starting")
+    ap.add_argument("--start-after", type=float, default=35.0,
+                    help="autopilot seconds before starting (after the bridge's boot hold and release)")
+    ap.add_argument("--entry-hold-s", type=float, default=30.0)
     ap.add_argument("--neutral-s", type=float, default=30.0)
     ap.add_argument("--hold-s", type=float, default=45.0)
-    ap.add_argument("--depths", type=float, nargs="+", default=[1.0, 2.0, 1.5, 3.0, 1.0])
+    ap.add_argument("--depths", type=float, nargs="+", default=[2.0, 1.0, 1.5, 3.0, 1.0])
     ap.add_argument("--minutes", type=float, default=30.0)
     a = ap.parse_args()
     ms = Mission(a.instance, Path(a.out))

@@ -1,7 +1,7 @@
 """Reference-frame conventions.
 
-HoloOcean client (docs ``units-and-coordinates``, verified by
-``scripts/characterize_holoocean.py``): metres, right-handed; world x
+HoloOcean client (docs ``units-and-coordinates`` and engine source
+``Conversion.cpp``/``PoseSensor.cpp``): metres, right-handed; world x
 forward/"north", y left, z up (NWU); body x forward, y left, z up (FLU).
 The water surface is at world z = SurfaceLevel (0 by default).
 
@@ -10,8 +10,11 @@ same constant reflection T = diag(1, -1, -1), so
 
     v_NED = T v_NWU,   v_FRD = T v_FLU,   R_NED<-FRD = T R_NWU<-FLU T.
 
-The HoloOcean ``IMUSocket`` of the BlueROV2 is already rotated 180 deg about x
-(FRD): at rest its accelerometer reads (0, 0, -9.8) = specific force in FRD.
+The HoloOcean ``IMUSocket`` of the BlueROV2 is documented as rotated 180 deg
+about x (FRD). Evidence: at rest its accelerometer reads (0, 0, -9.8)
+(characterisation), and the gyro x/y/z signs under single-thruster tests
+match the expected roll/pitch/yaw (Test C). The bridge takes the gyro from
+this socket and computes the specific force at the CoM.
 """
 from __future__ import annotations
 

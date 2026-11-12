@@ -1,0 +1,116 @@
+{
+ "source": "scripts/characterize_holoocean.py on the installed HoloOcean 2.3.0 Linux binary, 200 Hz, 2026-11-12",
+ "note": "force_per_N_world_flu = dv*m/(F*dt) after one 10 N tick from rest (includes the Unreal linear-damping factor 1/(1+dt)); angvel in rad/s (field originally mislabelled *_deg_s in the first characterization run; values are rad/s)",
+ "rest_imu_accel": [
+  0.0,
+  2.3849210606385896e-07,
+  -9.800000190734863
+ ],
+ "drag_applied_over_expected": 0.009949832950276705,
+ "thrusters": [
+  {
+   "index": 0,
+   "force_per_N_world_flu": [
+    0.0,
+    -0.0,
+    0.995
+   ],
+   "angvel_after_tick_rad_s": [
+    -0.03662,
+    -0.02535,
+    2e-05
+   ]
+  },
+  {
+   "index": 1,
+   "force_per_N_world_flu": [
+    0.0,
+    -0.0,
+    0.995
+   ],
+   "angvel_after_tick_rad_s": [
+    0.03663,
+    -0.02538,
+    -2e-05
+   ]
+  },
+  {
+   "index": 2,
+   "force_per_N_world_flu": [
+    0.0,
+    -0.0,
+    0.995
+   ],
+   "angvel_after_tick_rad_s": [
+    0.03662,
+    0.02535,
+    -2e-05
+   ]
+  },
+  {
+   "index": 3,
+   "force_per_N_world_flu": [
+    0.0,
+    -0.0,
+    0.995
+   ],
+   "angvel_after_tick_rad_s": [
+    -0.03663,
+    0.02538,
+    2e-05
+   ]
+  },
+  {
+   "index": 4,
+   "force_per_N_world_flu": [
+    0.7036,
+    0.7036,
+    0.0
+   ],
+   "angvel_after_tick_rad_s": [
+    -2e-05,
+    -0.0,
+    0.0212
+   ]
+  },
+  {
+   "index": 5,
+   "force_per_N_world_flu": [
+    0.7036,
+    -0.7036,
+    0.0
+   ],
+   "angvel_after_tick_rad_s": [
+    2e-05,
+    0.0,
+    -0.0212
+   ]
+  },
+  {
+   "index": 6,
+   "force_per_N_world_flu": [
+    0.7036,
+    0.7036,
+    0.0
+   ],
+   "angvel_after_tick_rad_s": [
+    2e-05,
+    0.0,
+    -0.0212
+   ]
+  },
+  {
+   "index": 7,
+   "force_per_N_world_flu": [
+    0.7036,
+    -0.7036,
+    0.0
+   ],
+   "angvel_after_tick_rad_s": [
+    -2e-05,
+    -0.0,
+    0.0212
+   ]
+  }
+ ]
+}
