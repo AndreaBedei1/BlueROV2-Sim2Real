@@ -188,6 +188,11 @@ class VehicleClient:
         self._stop = threading.Event()
         self._rx_thread = threading.Thread(target=self._rx_loop, daemon=True)
         self._rx_thread.start()
+        if not self.read_only:
+            # Like QGroundControl with a joystick: GCS HEARTBEAT at 1 Hz and MANUAL_CONTROL at 20 Hz
+            # (neutral unless commanded) for the whole session. ArduSub 4.1.2 otherwise falls back to
+            # RC inputs and, with the vehicle's FS_GCS_ENABLE=2 / FS_PILOT_INPUT=2, to its failsafes.
+            self._ensure_pilot_stream()
 
     # -- constructors --------------------------------------------------------------
     @classmethod
@@ -365,13 +370,18 @@ class VehicleClient:
             self._pilot_thread.start()
 
     def _pilot_loop(self, rate_hz: float = 20.0):
+        t_hb = 0.0
         while not self._stop.is_set():
             with self._lock:
                 s, b = dict(self._sticks), self._buttons
             try:
+                if time.monotonic() - t_hb >= 1.0:
+                    t_hb = time.monotonic()
+                    self._send(self.mav_out.heartbeat_send, mavlink.MAV_TYPE_GCS,
+                               mavlink.MAV_AUTOPILOT_INVALID, 0, 0, mavlink.MAV_STATE_ACTIVE)
                 self._send(self.mav_out.manual_control_send, self.sysid, s["x"], s["y"], s["z"], s["r"], b)
             except (ConnectionError, OSError):
-                pass
+                pass            # no autopilot stream yet: nothing to answer to
             time.sleep(1.0 / rate_hz)
 
     def press_button(self, name: str, hold_s: float = 0.3) -> CommandResult:

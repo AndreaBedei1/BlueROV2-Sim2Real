@@ -122,6 +122,14 @@ fi
 echo "bridge_pid=$BRIDGE_PID sitl_pid=$SITL_PID router_pid=$ROUTER_PID engine_pid=$(cat "$RUN_DIR/bridge/engine.pid" 2>/dev/null)" >> "$RUN_DIR/run_manifest.txt"
 echo "run_stack: ready (QGC=$QGC). MAVLink for clients: udp 127.0.0.1:14570 (listen), QGC: tcp 127.0.0.1:5880"
 
+# the simulated vehicle is usable once the bridge's boot hold has released it --------
+if [ "${BOOT_HOLD}" != "0" ]; then
+  for _ in $(seq 1 240); do grep -q '"kind": "released"' "$RUN_DIR/bridge/events.jsonl" 2>/dev/null && break; sleep 0.5; done
+  grep -q '"kind": "released"' "$RUN_DIR/bridge/events.jsonl" || die "vehicle not released by the bridge"
+  sleep 5      # settle after release (vehicle at rest, fully submerged)
+  echo "run_stack: simulated vehicle released"
+fi
+
 # command or wait ---------------------------------------------------------------------
 RC=0
 if [ $# -gt 0 ]; then

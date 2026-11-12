@@ -118,6 +118,15 @@ def test_manual_control_convention_enforced(sim):
     assert r.status is CommandStatus.REJECTED_LOCALLY and "0..1000" in r.detail
 
 
+def test_simulation_client_streams_heartbeat_and_neutral_input(sim):
+    client, ap = sim
+    time.sleep(1.5)
+    hb = [m for m in ap.received if m.get_type() == "HEARTBEAT"]
+    mc = [m for m in ap.received if m.get_type() == "MANUAL_CONTROL"]
+    assert hb and hb[-1].type == mavlink.MAV_TYPE_GCS and hb[-1].get_srcSystem() == 255
+    assert len(mc) > 15 and (mc[-1].x, mc[-1].y, mc[-1].z, mc[-1].r) == (0, 0, 500, 0)
+
+
 def test_depth_target_requires_alt_hold(sim):
     client, _ = sim
     assert client.set_depth_target(1.0).status is CommandStatus.REJECTED_LOCALLY

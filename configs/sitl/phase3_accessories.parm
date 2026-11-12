@@ -36,3 +36,9 @@ BTN9_SFUNCTION    77     # servo_1 max momentary
 # literal order is used here.
 BTN13_SFUNCTION   35     # lights2 brighter
 BTN14_SFUNCTION   36     # lights2 dimmer
+
+# Failsafes of the vehicle backup (hardware-inventory.it.md §8): a client must keep a
+# GCS heartbeat and a continuous MANUAL_CONTROL stream, as QGroundControl does.
+FS_GCS_ENABLE     2
+FS_PILOT_INPUT    2
+FS_PILOT_TIMEOUT  3
