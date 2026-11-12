@@ -47,7 +47,7 @@ def _sha256(path: Path):
 def git_state():
     diff = _sh("git", "diff", "HEAD")
     return {"commit": _sh("git", "rev-parse", "HEAD"), "branch": _sh("git", "rev-parse", "--abbrev-ref", "HEAD"),
-            "status_porcelain": _sh("git", "status", "--porcelain", "--untracked-files=no"),
+            "status_porcelain": _sh("git", "status", "--porcelain"),   # untracked files count as dirty
             "diff_sha256": hashlib.sha256(diff.encode()).hexdigest(), "diff": diff}
 
 

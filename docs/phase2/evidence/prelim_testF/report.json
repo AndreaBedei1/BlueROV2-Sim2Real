@@ -1,0 +1,135 @@
+{
+  "bridge_summary": {
+    "stop_reason": "sitl_silent",
+    "wall_s": 2053.0317431031726,
+    "sim_s": 1905.775,
+    "active_wall_s": 1905.7437049101572,
+    "sim_over_active_wall": 1.000016421457808,
+    "dt": 0.005,
+    "frames": 381155,
+    "physics_steps": 381155,
+    "duplicates_resent": 0,
+    "lost_frames": 0,
+    "sitl_resets": 0,
+    "bad_packets": 0,
+    "rx_timeouts": 29,
+    "saturated_steps": 0,
+    "sitl_frame_rate_values": [
+      201,
+      1200
+    ],
+    "rx_gap_ms": {
+      "mean": 4.999931011901114,
+      "std": 2.880888964572991,
+      "p50": 2.9644945170730352,
+      "p99": 10.167601148132233,
+      "p99_9": 10.305982563877508,
+      "max": 60.305814957246184,
+      "n_over_50ms": 1,
+      "n_over_1000ms": 0
+    },
+    "step_ms": {
+      "p50": 1.6284291632473469,
+      "p99": 2.5983365811407566,
+      "max": 59.84690296463668
+    }
+  },
+  "clock_check": {
+    "changing_samples": 15479,
+    "offsets_with_best_match": [
+      2
+    ],
+    "best_match_fraction": 0.8325473221784353,
+    "note": "row t_sim is the time after the step that applied the row's PWM; SITL time_usec of SERVO_OUTPUT_RAW is the time the output was computed, i.e. one frame earlier",
+    "all_offsets": {
+      "-3": [
+        3230,
+        15479
+      ],
+      "-2": [
+        3599,
+        15479
+      ],
+      "-1": [
+        4326,
+        15479
+      ],
+      "0": [
+        5869,
+        15479
+      ],
+      "1": [
+        8516,
+        15479
+      ],
+      "2": [
+        12887,
+        15479
+      ],
+      "3": [
+        12556,
+        15479
+      ]
+    }
+  },
+  "statustext": [
+    "AHRS: DCM active",
+    "AHRS: EKF3 active",
+    "ArduPilot Ready",
+    "Arming motors",
+    "Barometer 1 calibration complete",
+    "Barometer 2 calibration complete",
+    "Disarming motors",
+    "EKF3 IMU0 MAG0 initial yaw alignment complete",
+    "EKF3 IMU0 buffs IMU=19 OBS=7 OF=17 EN:17 dt=0.0120",
+    "EKF3 IMU0 initialised",
+    "EKF3 IMU0 tilt alignment complete",
+    "EKF3 IMU1 MAG0 initial yaw alignment complete",
+    "EKF3 IMU1 buffs IMU=19 OBS=7 OF=17 EN:17 dt=0.0120",
+    "EKF3 IMU1 initialised",
+    "EKF3 IMU1 tilt alignment complete",
+    "GPS 1: detected as u-blox at 230400 baud"
+  ],
+  "F": {
+    "duration_sim_s": 1860.695,
+    "duration_wall_s": 1860.7680970000001,
+    "sim_over_wall": 0.9999607167598595,
+    "sim_over_wall_per_minute": {
+      "min": 0.999873938720352,
+      "max": 1.0000420386035733,
+      "mean": 0.9999618147963053
+    },
+    "sim_minus_wall_s": {
+      "final": -0.07309700000018893,
+      "min": -0.07388500000001841,
+      "max": 0.0050420000000030996
+    },
+    "sim_dt": {
+      "min": 0.004999999999881766,
+      "max": 0.005000000000109139,
+      "unique": [
+        0.005
+      ]
+    },
+    "frame_count_steps": [
+      1
+    ],
+    "rx_gap_ms": {
+      "mean": 5.0001960960823775,
+      "std": 2.880535505025141,
+      "p99": 10.168,
+      "p99_9": 10.306,
+      "max": 19.081,
+      "n_over_50ms": 0,
+      "n_over_200ms": 0
+    },
+    "bridge_summary": {
+      "duplicates_resent": 0,
+      "lost_frames": 0,
+      "sitl_resets": 0,
+      "bad_packets": 0,
+      "rx_timeouts": 29,
+      "saturated_steps": 0
+    }
+  }
+}

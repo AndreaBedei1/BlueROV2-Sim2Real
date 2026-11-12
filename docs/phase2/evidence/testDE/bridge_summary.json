@@ -1,0 +1,38 @@
+{
+  "stop_reason": "interrupted",
+  "wall_s": 325.28335346793756,
+  "sim_s": 323.18,
+  "active_wall_s": 323.67226900998503,
+  "sim_over_active_wall": 0.9984791128029264,
+  "dt": 0.005,
+  "frames": 64636,
+  "physics_steps": 64636,
+  "duplicates_resent": 0,
+  "lost_frames": 0,
+  "sitl_resets": 0,
+  "stale_duplicates_dropped": 0,
+  "bad_packets": 0,
+  "rejected_datagrams": 0,
+  "rx_timeouts": 0,
+  "saturated_steps": 0,
+  "pwm_out_of_range_frames": 579,
+  "sitl_frame_rate_values": [
+    200,
+    1200
+  ],
+  "rx_gap_ms": {
+    "mean": 5.007693494391352,
+    "std": 3.723120211045897,
+    "p50": 3.059038892388344,
+    "p99": 10.190384443849325,
+    "p99_9": 11.00161565002057,
+    "max": 443.52059811353683,
+    "n_over_50ms": 2,
+    "n_over_1000ms": 0
+  },
+  "step_ms": {
+    "p50": 1.7753455322235823,
+    "p99": 3.9516962831840043,
+    "max": 442.9919340182096
+  }
+}

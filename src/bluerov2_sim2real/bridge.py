@@ -14,7 +14,8 @@ One physics step per *new* SITL frame:
   kernel timestamps (SO_TIMESTAMPNS).
 * A jump in ``frame_count`` is counted as lost SITL->bridge packets; physics
   still advances one step. SITL advances its own clock by the difference of
-  our timestamps, so the two clocks stay equal by construction.
+  our timestamps, so the two clocks stay equal (dt = 1/200 s is an exact number
+  of microseconds; SITL patch rounds the increment).
 * A decrease of ``frame_count`` means SITL restarted: the run is stopped
   (reason ``sitl_reset``), because the physics state no longer matches.
 * The bridge locks onto the first sender (address, port) and ignores any
@@ -134,6 +135,10 @@ class Bridge:
                 if level == socket.SOL_SOCKET and kind == SO_TIMESTAMPNS and len(payload) >= 16:
                     sec, nsec = struct.unpack("qq", payload[:16])
                     return data, addr, sec + nsec * 1e-9
+            if not getattr(self, "_warned_no_kernel_ts", False):
+                self._warned_no_kernel_ts = True
+                self.event("warning", message="datagram without kernel timestamp: stale-resend "
+                                              "detection degraded to read time")
             return data, addr, time.time()
         data, addr = self.sock.recvfrom(2048)
         return data, addr, time.time()

@@ -70,7 +70,7 @@ stop_own() {    # stop_own <pid> <cmdline substring> <signal> <timeout_s>
 cleanup() {
   stop_own "${MISSION_PID:-}" sitl_mission.py TERM 5
   stop_own "${SITL_PID:-}" "run_sitl.sh|ardusub" TERM 5
-  stop_own "${BRIDGE_PID:-}" run_bridge.py TERM 30          # orderly: closes the engine, writes summary
+  stop_own "${BRIDGE_PID:-}" run_bridge.py TERM 75          # orderly; engine start-up can block ~30 s in HoloOcean
   ENGINE_PID=$(cat "$RUN_DIR/bridge/engine.pid" 2>/dev/null || true)
   if own_alive "$ENGINE_PID" "Holodeck"; then                 # only our own engine, if orphaned
     echo "run_experiment: stopping orphaned engine $ENGINE_PID" >&2
