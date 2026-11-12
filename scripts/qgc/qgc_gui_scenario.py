@@ -80,18 +80,46 @@ class Gui:
         self.x("mouseup", "1")
         time.sleep(2.0)
 
+    def toolbar_menus(self):
+        """Centres of the two outlined toolbar drop-downs (mode, arm), found in a screenshot.
+
+        Their position depends on the width of the current mode label, so fixed
+        coordinates are wrong after a mode change.
+        """
+        import numpy as np
+        from PIL import Image
+        tmp = self.out / "_toolbar.png"
+        subprocess.run(["import", "-window", self.win, str(tmp)], check=True)
+        img = np.asarray(Image.open(tmp).convert("L")).astype(int)
+        top, bottom = 14, 40               # the outlined boxes span roughly y = 14..40
+        bright = img[top:bottom, :700] > 200
+        cols = [x for x in range(bright.shape[1]) if bright[:, x].mean() > 0.8]   # vertical white borders
+        edges = []
+        for x in cols:
+            if not edges or x - edges[-1][-1] > 1:
+                edges.append([x])
+            else:
+                edges[-1].append(x)
+        xs = [int(sum(e) / len(e)) for e in edges]
+        if len(xs) < 4:
+            raise RuntimeError(f"toolbar menus not found (edges {xs})")
+        (m0, m1), (a0, a1) = (xs[-4], xs[-3]), (xs[-2], xs[-1])     # the last two outlined boxes
+        return ((m0 + m1) // 2, 27), ((a0 + a1) // 2, 27)
+
     def arm(self, arm=True):
-        self.click(ARM_MENU)
-        self.click((ARM_MENU[0] - 19, 61 if arm else 100))
+        _, arm_menu = self.toolbar_menus()
+        self.click(arm_menu)
+        self.click((arm_menu[0] - 19, 61 if arm else 100))
         self.shot("confirm_" + ("arm" if arm else "disarm"))
         self.mark("slide_confirm", "arm" if arm else "disarm")
         self.slide_confirm()
         self.shot("armed" if arm else "disarmed")
 
     def mode(self, name):
-        self.click(MODE_MENU)
+        mode_menu, _ = self.toolbar_menus()
+        self.click(mode_menu)
         self.mark("mode_select", name)
-        self.click((MODE_MENU[0] - 34, MODE_ITEMS[name]))
+        self.click((mode_menu[0], MODE_ITEMS[name]))
         time.sleep(1.0)
         self.shot("mode_" + name.replace(" ", "_"))
 
