@@ -63,8 +63,15 @@ def test_pwm_mapping():
     assert t.pwm_to_command(1100) == pytest.approx(-1)
     assert t.pwm_to_command(2100) == pytest.approx(1)
     assert t.pwm_to_command(0) == 0                  # channel not output -> unpowered
-    assert t.command_to_thrust(1.0) == pytest.approx(51.4)
-    assert t.command_to_thrust(-1.0) == pytest.approx(-39.9)
+    assert t.command_to_thrust(1.0) == pytest.approx(HOLO_MAX_THRUST_N)          # never above the engine clamp
+    assert t.command_to_thrust(-1.0) == pytest.approx(-HOLO_MAX_THRUST_N * 39.9 / 51.4)
+
+
+def test_full_vertical_command_never_saturates():
+    v, a = LogicalVehicle(), HoloAllocator()
+    for p in (1100, 1900):
+        thr = v.pwm_to_thrusts([1500] * 4 + [p] * 4 + [0] * 8)
+        assert not a.allocate(v.wrench(thr), nominal=v.nominal_holo_forces(thr)).saturated
 
 
 def test_neutral_pwm_gives_zero_wrench():

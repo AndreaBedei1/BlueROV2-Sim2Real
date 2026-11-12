@@ -101,12 +101,18 @@ class ThrusterModel:
     """PWM -> thrust for one motor. Provisional, uncalibrated (Phase 4 calibrates).
 
     Linear in the normalised command u = (pwm - 1500) / 400, as ArduSub 4.1.2
-    assumes when it maps thrust to PWM. Maximum forces are the Blue Robotics
-    T200 figures at 16 V recorded in Phase 1 (51.4 N forward, 39.9 N reverse);
-    no dead band, no dynamics, no voltage dependence.
+    assumes when it maps thrust to PWM; no dead band, no dynamics, no voltage
+    dependence. The Blue Robotics T200 at 16 V gives 51.4 N forward / 39.9 N
+    reverse (Phase 1), but the HoloOcean agent clamps every thruster to
+    28.75 N (BR_MAX_THRUST, compiled in the engine). Using the T200 values
+    would make the bridge believe in forces that are silently clipped (seen in
+    the first Test E run: 25 % of steps saturated). The T200 forward/reverse
+    ratio is therefore kept and scaled to the simulator limit:
+    28.75 N forward, 28.75 * 39.9 / 51.4 = 22.32 N reverse. This
+    underestimates the real thrust authority by a factor ~0.56.
     """
-    max_forward_n: float = 51.4
-    max_reverse_n: float = 39.9
+    max_forward_n: float = HOLO_MAX_THRUST_N
+    max_reverse_n: float = HOLO_MAX_THRUST_N * 39.9 / 51.4
 
     @staticmethod
     def pwm_to_command(pwm: float) -> float:
