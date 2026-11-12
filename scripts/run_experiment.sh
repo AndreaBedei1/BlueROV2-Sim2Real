@@ -59,7 +59,7 @@ done
 
 # --- 3. process management --------------------------------------------------------
 own_alive() {   # own_alive <pid> <cmdline substring>
-  [ -n "$1" ] && [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' < "/proc/$1/cmdline" | grep -q -- "$2"
+  [ -n "$1" ] && [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' < "/proc/$1/cmdline" | grep -Eq -- "$2"
 }
 stop_own() {    # stop_own <pid> <cmdline substring> <signal> <timeout_s>
   own_alive "$1" "$2" || return 0
@@ -69,7 +69,7 @@ stop_own() {    # stop_own <pid> <cmdline substring> <signal> <timeout_s>
 }
 cleanup() {
   stop_own "${MISSION_PID:-}" sitl_mission.py TERM 5
-  stop_own "${SITL_PID:-}" ardusub TERM 5
+  stop_own "${SITL_PID:-}" "run_sitl.sh|ardusub" TERM 5
   stop_own "${BRIDGE_PID:-}" run_bridge.py TERM 30          # orderly: closes the engine, writes summary
   ENGINE_PID=$(cat "$RUN_DIR/bridge/engine.pid" 2>/dev/null || true)
   if own_alive "$ENGINE_PID" "Holodeck"; then                 # only our own engine, if orphaned
@@ -100,7 +100,7 @@ done
 SITL_PID=$!
 for _ in $(seq 1 60); do
   ss -Htlnp 2>/dev/null | grep "127.0.0.1:$((5760 + 10*INSTANCE)) " | grep -q "pid=$SITL_PID," && break
-  own_alive $SITL_PID ardusub || { cat "$RUN_DIR/sitl.log" >&2; die "SITL exited"; }
+  own_alive $SITL_PID "run_sitl.sh|ardusub" || { cat "$RUN_DIR/sitl.log" >&2; die "SITL exited"; }
   sleep 0.5
 done
 ss -Htlnp 2>/dev/null | grep "127.0.0.1:$((5760 + 10*INSTANCE)) " | grep -q "pid=$SITL_PID," \
