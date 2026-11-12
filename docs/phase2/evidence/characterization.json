@@ -1,0 +1,535 @@
+{
+ "date_utc": "2026-11-12T17:13:19Z",
+ "holoocean_client": "2.3.0",
+ "python": "3.9.25",
+ "host": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+ "timing": [
+  {
+   "ticks_per_sec": 30,
+   "ticks": 3000,
+   "wall_s": 2.0712576620280743,
+   "max_realtime_factor": 48.27984554180714,
+   "tick_ms_p50": 0.6217515328899026,
+   "tick_ms_p95": 0.859758025035262,
+   "tick_ms_p99": 1.6457087895832887,
+   "tick_ms_max": 52.387143950909376,
+   "budget_ms": 33.333333333333336
+  },
+  {
+   "ticks_per_sec": 100,
+   "ticks": 3000,
+   "wall_s": 2.0425374880433083,
+   "max_realtime_factor": 14.687612920504646,
+   "tick_ms_p50": 0.6157956086099148,
+   "tick_ms_p95": 0.832752662245184,
+   "tick_ms_p99": 1.4330993383191297,
+   "tick_ms_max": 58.97642998024821,
+   "budget_ms": 10.0
+  },
+  {
+   "ticks_per_sec": 200,
+   "ticks": 3000,
+   "wall_s": 2.050260123098269,
+   "max_realtime_factor": 7.316144830116783,
+   "tick_ms_p50": 0.6203590892255306,
+   "tick_ms_p95": 0.8410625741817055,
+   "tick_ms_p99": 1.3334696274250735,
+   "tick_ms_max": 55.149459047243,
+   "budget_ms": 5.0
+  }
+ ],
+ "physics": [
+  {
+   "ticks_per_sec": 30,
+   "dt_client": 0.03333333333333333,
+   "rest": {
+    "duration_s": 2.0,
+    "drift_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "imu_accel_mean": [
+     0.0,
+     2.3849210606385896e-07,
+     -9.800000190734863
+    ],
+    "imu_gyro_mean": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "depth_sensor": -4.940000057220459,
+    "pose_z": -5.0
+   },
+   "timestep": {
+    "force_total_N": 40.0,
+    "dv_z": 0.11207729578018188,
+    "dt_physical_est": 0.03222222253680229,
+    "ratio_physical_over_client": 0.9666666761040688
+   },
+   "drag": {
+    "samples_v_decel": [
+     [
+      0.2413523942232132,
+      0.25013968348503113
+     ],
+     [
+      0.4820762276649475,
+      0.5171334743499756
+     ],
+     [
+      0.9616382718086243,
+      1.1011362075805664
+     ],
+     [
+      1.4386861324310303,
+      1.7509174346923828
+     ],
+     [
+      1.913219928741455,
+      2.4653971195220947
+     ]
+    ],
+    "fit_linear_1_per_s": 0.9999970558922413,
+    "fit_quadratic_1_per_m": 0.15085248720742828,
+    "expected_quadratic_correct_drag": 15.605217391304349,
+    "applied_over_expected": 0.009666798188373037
+   },
+   "thrusters": [
+    {
+     "index": 0,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.9667
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.23891,
+      -0.16542,
+      0.00015
+     ]
+    },
+    {
+     "index": 1,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.9667
+     ],
+     "angvel_after_tick_deg_s": [
+      0.23898,
+      -0.16556,
+      -0.00015
+     ]
+    },
+    {
+     "index": 2,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.9667
+     ],
+     "angvel_after_tick_deg_s": [
+      0.23891,
+      0.16542,
+      -0.00015
+     ]
+    },
+    {
+     "index": 3,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.9667
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.23898,
+      0.16556,
+      0.00015
+     ]
+    },
+    {
+     "index": 4,
+     "force_per_N_world_flu": [
+      0.6835,
+      0.6835,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.00012,
+      -0.0,
+      0.13833
+     ]
+    },
+    {
+     "index": 5,
+     "force_per_N_world_flu": [
+      0.6835,
+      -0.6835,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      0.00012,
+      0.0,
+      -0.13833
+     ]
+    },
+    {
+     "index": 6,
+     "force_per_N_world_flu": [
+      0.6835,
+      0.6835,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      0.00012,
+      0.0,
+      -0.13833
+     ]
+    },
+    {
+     "index": 7,
+     "force_per_N_world_flu": [
+      0.6835,
+      -0.6835,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.00012,
+      -0.0,
+      0.13833
+     ]
+    }
+   ]
+  },
+  {
+   "ticks_per_sec": 100,
+   "dt_client": 0.01,
+   "rest": {
+    "duration_s": 2.0,
+    "drift_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "imu_accel_mean": [
+     0.0,
+     2.3849210606385896e-07,
+     -9.800000190734863
+    ],
+    "imu_gyro_mean": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "depth_sensor": -4.940000057220459,
+    "pose_z": -5.0
+   },
+   "timestep": {
+    "force_total_N": 40.0,
+    "dv_z": 0.03443478047847748,
+    "dt_physical_est": 0.009899999387562275,
+    "ratio_physical_over_client": 0.9899999387562275
+   },
+   "drag": {
+    "samples_v_decel": [
+     [
+      0.24740344285964966,
+      0.25686025619506836
+     ],
+     [
+      0.49461376667022705,
+      0.5324095487594604
+     ],
+     [
+      0.988455057144165,
+      1.1394023895263672
+     ],
+     [
+      1.481523871421814,
+      1.8206119537353516
+     ],
+     [
+      1.9738203287124634,
+      2.5757193565368652
+     ]
+    ],
+    "fit_linear_1_per_s": 0.9999965307390695,
+    "fit_quadratic_1_per_m": 0.15449382613274476,
+    "expected_quadratic_correct_drag": 15.605217391304349,
+    "applied_over_expected": 0.009900139309743478
+   },
+   "thrusters": [
+    {
+     "index": 0,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.99
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.07296,
+      -0.05052,
+      5e-05
+     ]
+    },
+    {
+     "index": 1,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.99
+     ],
+     "angvel_after_tick_deg_s": [
+      0.07298,
+      -0.05056,
+      -4e-05
+     ]
+    },
+    {
+     "index": 2,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.99
+     ],
+     "angvel_after_tick_deg_s": [
+      0.07296,
+      0.05052,
+      -5e-05
+     ]
+    },
+    {
+     "index": 3,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.99
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.07298,
+      0.05056,
+      4e-05
+     ]
+    },
+    {
+     "index": 4,
+     "force_per_N_world_flu": [
+      0.7,
+      0.7,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -4e-05,
+      -0.0,
+      0.04224
+     ]
+    },
+    {
+     "index": 5,
+     "force_per_N_world_flu": [
+      0.7,
+      -0.7,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      4e-05,
+      0.0,
+      -0.04224
+     ]
+    },
+    {
+     "index": 6,
+     "force_per_N_world_flu": [
+      0.7,
+      0.7,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      4e-05,
+      0.0,
+      -0.04224
+     ]
+    },
+    {
+     "index": 7,
+     "force_per_N_world_flu": [
+      0.7,
+      -0.7,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -4e-05,
+      -0.0,
+      0.04224
+     ]
+    }
+   ]
+  },
+  {
+   "ticks_per_sec": 200,
+   "dt_client": 0.005,
+   "rest": {
+    "duration_s": 2.0,
+    "drift_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "imu_accel_mean": [
+     0.0,
+     2.3849210606385896e-07,
+     -9.800000190734863
+    ],
+    "imu_gyro_mean": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "depth_sensor": -4.940000057220459,
+    "pose_z": -5.0
+   },
+   "timestep": {
+    "force_total_N": 40.0,
+    "dv_z": 0.017304347828030586,
+    "dt_physical_est": 0.004975000000558794,
+    "ratio_physical_over_client": 0.9950000001117587
+   },
+   "drag": {
+    "samples_v_decel": [
+     [
+      0.24870146811008453,
+      0.2583056688308716
+     ],
+     [
+      0.49730589985847473,
+      0.5357086658477783
+     ],
+     [
+      0.9942235946655273,
+      1.1476993560791016
+     ],
+     [
+      1.490753173828125,
+      1.8358230590820312
+     ],
+     [
+      1.9868944883346558,
+      2.5998592376708984
+     ]
+    ],
+    "fit_linear_1_per_s": 1.0000012165769956,
+    "fit_quadratic_1_per_m": 0.15526930619623108,
+    "expected_quadratic_correct_drag": 15.605217391304349,
+    "applied_over_expected": 0.009949832950276705
+   },
+   "thrusters": [
+    {
+     "index": 0,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.995
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.03662,
+      -0.02535,
+      2e-05
+     ]
+    },
+    {
+     "index": 1,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.995
+     ],
+     "angvel_after_tick_deg_s": [
+      0.03663,
+      -0.02538,
+      -2e-05
+     ]
+    },
+    {
+     "index": 2,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.995
+     ],
+     "angvel_after_tick_deg_s": [
+      0.03662,
+      0.02535,
+      -2e-05
+     ]
+    },
+    {
+     "index": 3,
+     "force_per_N_world_flu": [
+      0.0,
+      -0.0,
+      0.995
+     ],
+     "angvel_after_tick_deg_s": [
+      -0.03663,
+      0.02538,
+      2e-05
+     ]
+    },
+    {
+     "index": 4,
+     "force_per_N_world_flu": [
+      0.7036,
+      0.7036,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -2e-05,
+      -0.0,
+      0.0212
+     ]
+    },
+    {
+     "index": 5,
+     "force_per_N_world_flu": [
+      0.7036,
+      -0.7036,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      2e-05,
+      0.0,
+      -0.0212
+     ]
+    },
+    {
+     "index": 6,
+     "force_per_N_world_flu": [
+      0.7036,
+      0.7036,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      2e-05,
+      0.0,
+      -0.0212
+     ]
+    },
+    {
+     "index": 7,
+     "force_per_N_world_flu": [
+      0.7036,
+      -0.7036,
+      0.0
+     ],
+     "angvel_after_tick_deg_s": [
+      -2e-05,
+      -0.0,
+      0.0212
+     ]
+    }
+   ]
+  }
+ ]
+}

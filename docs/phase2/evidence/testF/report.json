@@ -1,0 +1,133 @@
+{
+  "bridge_summary": {
+    "stop_reason": "interrupted",
+    "wall_s": 1900.41567506711,
+    "sim_s": 1897.075,
+    "active_wall_s": 1898.6487009609118,
+    "sim_over_active_wall": 0.9991711468476947,
+    "dt": 0.005,
+    "frames": 379415,
+    "physics_steps": 379415,
+    "duplicates_resent": 0,
+    "lost_frames": 0,
+    "sitl_resets": 0,
+    "stale_duplicates_dropped": 0,
+    "bad_packets": 0,
+    "rejected_datagrams": 0,
+    "rx_timeouts": 0,
+    "saturated_steps": 0,
+    "pwm_out_of_range_frames": 579,
+    "sitl_frame_rate_values": [
+      200,
+      1200
+    ],
+    "rx_gap_ms": {
+      "mean": 5.004160892747532,
+      "std": 3.3060465272320387,
+      "p50": 3.00188094843179,
+      "p99": 10.160883727949113,
+      "p99_9": 10.445047385059421,
+      "max": 425.7283927872777,
+      "n_over_50ms": 10,
+      "n_over_1000ms": 0
+    },
+    "step_ms": {
+      "p50": 1.7256231512874365,
+      "p99": 3.3082243893295504,
+      "max": 425.1911239698529
+    }
+  },
+  "clock_check": {
+    "changing_samples": 14176,
+    "offsets_with_best_match": [
+      1
+    ],
+    "best_match_fraction": 1.0,
+    "note": "row t_sim is the time after the step that applied the row's PWM; SITL time_usec of SERVO_OUTPUT_RAW is the time the output was computed, i.e. one frame earlier",
+    "all_offsets": {
+      "-3": [
+        3027,
+        14176
+      ],
+      "-2": [
+        3900,
+        14176
+      ],
+      "-1": [
+        5691,
+        14176
+      ],
+      "0": [
+        8783,
+        14176
+      ],
+      "1": [
+        14176,
+        14176
+      ],
+      "2": [
+        8869,
+        14176
+      ],
+      "3": [
+        5768,
+        14176
+      ]
+    }
+  },
+  "statustext": [
+    "AHRS: DCM active",
+    "AHRS: EKF3 active",
+    "ArduPilot Ready",
+    "Arming motors",
+    "Barometer 1 calibration complete",
+    "Barometer 2 calibration complete",
+    "Disarming motors",
+    "EKF3 IMU0 MAG0 initial yaw alignment complete",
+    "EKF3 IMU0 buffs IMU=6 OBS=2 OF=5 EN:5 dt=0.0120",
+    "EKF3 IMU0 initialised",
+    "EKF3 IMU0 tilt alignment complete"
+  ],
+  "F": {
+    "duration_sim_s": 1860.0,
+    "duration_wall_s": 1861.684362,
+    "sim_over_wall": 0.9990952483490861,
+    "sim_over_wall_per_minute": {
+      "min": 0.9903740332132792,
+      "max": 1.0000388714167543,
+      "mean": 0.9990657586564503
+    },
+    "sim_minus_wall_s": {
+      "final": -1.6843619999999646,
+      "min": -1.7787799999998697,
+      "max": 0.0023819999999972197
+    },
+    "sim_dt": {
+      "min": 0.004999999999881766,
+      "max": 0.005000000000109139,
+      "unique": [
+        0.005
+      ]
+    },
+    "frame_count_steps": [
+      1
+    ],
+    "rx_gap_ms": {
+      "mean": 5.0045279784946235,
+      "std": 3.31274365526636,
+      "p99": 10.16,
+      "p99_9": 10.441003000000142,
+      "max": 425.728,
+      "n_over_50ms": 10,
+      "n_over_200ms": 6
+    },
+    "bridge_summary": {
+      "duplicates_resent": 0,
+      "lost_frames": 0,
+      "sitl_resets": 0,
+      "bad_packets": 0,
+      "rx_timeouts": 0,
+      "saturated_steps": 0
+    }
+  }
+}
