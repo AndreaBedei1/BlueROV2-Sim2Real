@@ -10,7 +10,7 @@ Study how faithfully an underwater simulation can reproduce the dynamics and sen
 
 ## Current status
 
-**Phase 1 — Platform reconnaissance and literature review: completed for the planned phase gate; remaining physical measurements are tracked.**
+**Phase 1 — Platform reconnaissance and literature review: CLOSED (2026-11-12).** The plan's criterion — integration prerequisites and open questions identified — is met. Not all physical vehicle parameters were measured; the residual checks are tracked in [docs/phase1](docs/phase1/README.md). Part of the original literature material (LaTeX report, 36-entry BibTeX, paper review, CSV matrix) was lost; see the availability table there.
 
 **Phase 2 — Minimal ArduSub SITL ↔ HoloOcean verification: planned and documented, not yet implemented or tested.** See [Phase 2 plan](docs/phase2/README.md).
 
@@ -19,7 +19,7 @@ Work performed:
 - Review of ArduSub and external simulation interfaces.
 - Technical assessment of HoloOcean's BlueROV2 model and known physics issues.
 - Comparative review of HoloOcean, Stonefish and Gazebo.
-- Critical review of 36 relevant scientific publications.
+- Critical review of 36 relevant scientific publications (the review itself was lost; 6 key references are re-verified in [references.bib](docs/phase1/report/references.bib)).
 - Identification of unresolved hardware measurements and configuration checks.
 
 **No HoloOcean–ArduSub bridge has been implemented in this project.** Existing unrelated middleware is outside the scope of this repository.
@@ -50,7 +50,7 @@ Primary background includes:
 
 ## Documentation
 
-- [Phase 1 — findings and outstanding physical checks](docs/phase1/README.md)
+- [Phase 1 — findings, published technical notes and outstanding physical checks](docs/phase1/README.md)
 - [Phase 2 — minimal SITL–HoloOcean connection and acceptance tests](docs/phase2/README.md)
 
 This repository is a research work in progress.
