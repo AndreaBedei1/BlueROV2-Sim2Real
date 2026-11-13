@@ -1,0 +1,201 @@
+{
+  "bridge_summary": {
+    "stop_reason": "interrupted",
+    "wall_s": 324.4613050709013,
+    "sim_s": 323.175,
+    "active_wall_s": 323.0792660450097,
+    "sim_over_active_wall": 1.000296317235588,
+    "dt": 0.005,
+    "frames": 64635,
+    "physics_steps": 64635,
+    "duplicates_resent": 0,
+    "lost_frames": 0,
+    "sitl_resets": 0,
+    "stale_duplicates_dropped": 0,
+    "bad_packets": 0,
+    "rejected_datagrams": 0,
+    "rx_timeouts": 0,
+    "saturated_steps": 0,
+    "pwm_out_of_range_frames": 579,
+    "sitl_frame_rate_values": [
+      200,
+      1200
+    ],
+    "rx_gap_ms": {
+      "mean": 4.998596188461332,
+      "std": 3.0022263399982756,
+      "p50": 2.9461210360750556,
+      "p99": 10.034153559245167,
+      "p99_9": 10.232993081677707,
+      "max": 63.59300506301224,
+      "n_over_50ms": 1,
+      "n_over_1000ms": 0
+    },
+    "step_ms": {
+      "p50": 1.525708008557558,
+      "p99": 2.5626248773187394,
+      "max": 63.22628608904779
+    }
+  },
+  "clock_check": {
+    "changing_samples": 1996,
+    "offsets_with_best_match": [
+      1
+    ],
+    "best_match_fraction": 1.0,
+    "note": "row t_sim is the time after the step that applied the row's PWM; SITL time_usec of SERVO_OUTPUT_RAW is the time the output was computed, i.e. one frame earlier",
+    "all_offsets": {
+      "-3": [
+        399,
+        1996
+      ],
+      "-2": [
+        557,
+        1996
+      ],
+      "-1": [
+        813,
+        1996
+      ],
+      "0": [
+        1220,
+        1996
+      ],
+      "1": [
+        1996,
+        1996
+      ],
+      "2": [
+        1180,
+        1996
+      ],
+      "3": [
+        765,
+        1996
+      ]
+    }
+  },
+  "statustext": [
+    "AHRS: DCM active",
+    "AHRS: EKF3 active",
+    "ArduPilot Ready",
+    "Arming motors",
+    "Barometer 1 calibration complete",
+    "Barometer 2 calibration complete",
+    "Disarming motors",
+    "EKF3 IMU0 MAG0 initial yaw alignment complete",
+    "EKF3 IMU0 buffs IMU=6 OBS=2 OF=5 EN:5 dt=0.0120",
+    "EKF3 IMU0 initialised",
+    "EKF3 IMU0 tilt alignment complete"
+  ],
+  "D1_manual_neutral": {
+    "duration_s": 30.0,
+    "depth_start": 1.0,
+    "depth_end": 1.0,
+    "max_abs_horizontal_drift_m": 0.0,
+    "max_abs_depth_change_m": 0.0,
+    "max_abs_roll_deg": 0.0,
+    "max_abs_pitch_deg": 0.0,
+    "yaw_change_deg": 0.0,
+    "pwm_all_neutral": true,
+    "meaning": "link adds no spurious force when ArduSub outputs neutral (cannot detect controller issues)",
+    "pass": true
+  },
+  "D2_althold_entry_hold": {
+    "duration_s": 30.0,
+    "depth_at_entry": 1.0,
+    "max_abs_depth_deviation_m": 0.57732,
+    "final_depth_deviation_m": 0.040100000000000025,
+    "max_abs_roll_deg": 0.5158,
+    "max_abs_pitch_deg": 0.5041,
+    "yaw_change_deg": 0.9897,
+    "meaning": "closed-loop hold right after mode entry, no target command",
+    "pass": false
+  },
+  "D": {
+    "pass": false
+  },
+  "E": {
+    "criteria": {
+      "settle_band_m": "max(0.05 m, 5 % of the step)",
+      "max_settling_s": 20.0,
+      "max_overshoot": "max(0.05 m, 25 % of the step)",
+      "max_final_abs_mean_error_m": 0.02,
+      "max_abs_roll_pitch_deg": 2.0,
+      "max_saturated_fraction": 0.01
+    },
+    "steps": [
+      {
+        "target_m": 2.0,
+        "start_depth_m": 1.0401,
+        "duration_s": 44.999999999999986,
+        "moved_in_correct_direction": true,
+        "settling_time_s": 8.840000000000003,
+        "overshoot_m": 0.07054999999999989,
+        "final10s_mean_error_m": -0.0027183399999999996,
+        "final10s_rms_error_m": 0.0029741335208762895,
+        "max_abs_roll_deg": 0.3982,
+        "max_abs_pitch_deg": 0.3607,
+        "saturated_fraction": 0.0,
+        "pass": true
+      },
+      {
+        "target_m": 1.0,
+        "start_depth_m": 1.99784,
+        "duration_s": 45.0,
+        "moved_in_correct_direction": true,
+        "settling_time_s": 9.355000000000018,
+        "overshoot_m": 0.06435000000000002,
+        "final10s_mean_error_m": -0.006389909999999999,
+        "final10s_rms_error_m": 0.00642355995535186,
+        "max_abs_roll_deg": 0.3824,
+        "max_abs_pitch_deg": 0.3743,
+        "saturated_fraction": 0.0,
+        "pass": true
+      },
+      {
+        "target_m": 1.5,
+        "start_depth_m": 0.99207,
+        "duration_s": 45.0,
+        "moved_in_correct_direction": true,
+        "settling_time_s": 2.9000000000000057,
+        "overshoot_m": 0.015630000000000033,
+        "final10s_mean_error_m": -0.004267529999999997,
+        "final10s_rms_error_m": 0.00439582661168522,
+        "max_abs_roll_deg": 0.3204,
+        "max_abs_pitch_deg": 0.3544,
+        "saturated_fraction": 0.0,
+        "pass": true
+      },
+      {
+        "target_m": 3.0,
+        "start_depth_m": 1.4945,
+        "duration_s": 45.0,
+        "moved_in_correct_direction": true,
+        "settling_time_s": 8.02000000000001,
+        "overshoot_m": 0.07879000000000014,
+        "final10s_mean_error_m": -0.0022190449999999967,
+        "final10s_rms_error_m": 0.002505137670867606,
+        "max_abs_roll_deg": 0.2637,
+        "max_abs_pitch_deg": 0.3146,
+        "saturated_fraction": 0.0,
+        "pass": true
+      },
+      {
+        "target_m": 1.0,
+        "start_depth_m": 2.99862,
+        "duration_s": 45.0,
+        "moved_in_correct_direction": true,
+        "settling_time_s": 11.805000000000007,
+        "overshoot_m": 0.13343000000000005,
+        "final10s_mean_error_m": -0.010223729999999999,
+        "final10s_rms_error_m": 0.010414578282388584,
+        "max_abs_roll_deg": 0.2117,
+        "max_abs_pitch_deg": 0.2536,
+        "saturated_fraction": 0.0,
+        "pass": true
+      }
+    ],
+    "pass": true
+  }
+}

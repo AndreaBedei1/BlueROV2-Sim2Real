@@ -1,0 +1,160 @@
+{
+  "checks": [
+    {
+      "check": "qgc_stick_forward",
+      "manual_control_field": "x",
+      "values_last": 937,
+      "rate_hz": 27.0,
+      "servo1_4": [
+        1313,
+        1313,
+        1687,
+        1687
+      ],
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_backward",
+      "manual_control_field": "x",
+      "values_last": -937,
+      "rate_hz": 24.7,
+      "servo1_4": [
+        1688,
+        1688,
+        1312,
+        1312
+      ],
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_lateral_right",
+      "manual_control_field": "y",
+      "values_last": 937,
+      "rate_hz": 25.2,
+      "servo1_4": [
+        1687,
+        1313,
+        1687,
+        1313
+      ],
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_lateral_left",
+      "manual_control_field": "y",
+      "values_last": -937,
+      "rate_hz": 25.0,
+      "servo1_4": [
+        1312,
+        1688,
+        1312,
+        1688
+      ],
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_ascend",
+      "manual_control_field": "z",
+      "values_last": 968,
+      "rate_hz": 25.1,
+      "depth_change_m": -0.627,
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_descend",
+      "manual_control_field": "z",
+      "values_last": 31,
+      "rate_hz": 25.0,
+      "depth_change_m": 1.742,
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_yaw_right",
+      "manual_control_field": "r",
+      "values_last": 937,
+      "rate_hz": 25.3,
+      "servo1_4": [
+        1687,
+        1313,
+        1313,
+        1687
+      ],
+      "yaw_rate_extreme": 22.689,
+      "pass": true
+    },
+    {
+      "check": "qgc_stick_yaw_left",
+      "manual_control_field": "r",
+      "values_last": -937,
+      "rate_hz": 24.9,
+      "servo1_4": [
+        1312,
+        1688,
+        1688,
+        1312
+      ],
+      "yaw_rate_extreme": -22.769,
+      "pass": true
+    },
+    {
+      "check": "qgc_arm_then_disarm",
+      "pass": true,
+      "arm_disarm_acks": [
+        [
+          400,
+          0
+        ],
+        [
+          400,
+          0
+        ]
+      ]
+    },
+    {
+      "check": "qgc_mode_sequence",
+      "pass": true,
+      "modes_seen": [
+        "MANUAL",
+        "STABILIZE",
+        "ALT_HOLD",
+        "MANUAL"
+      ]
+    },
+    {
+      "check": "qgc_throttle_range_0_1000",
+      "pass": true,
+      "z_min_max": [
+        31,
+        968
+      ]
+    },
+    {
+      "check": "qgc_throttle_neutral_is_500",
+      "pass": true,
+      "first_values": [
+        500,
+        500,
+        500,
+        500,
+        500
+      ]
+    },
+    {
+      "check": "qgc_manual_control_source_target",
+      "pass": true,
+      "src_comp_target": [
+        [
+          255,
+          190,
+          17
+        ]
+      ]
+    }
+  ],
+  "passed": 13,
+  "total": 13,
+  "manual_control_messages": 4860,
+  "anomalies": [
+    "yaw rate 22.8 rad/s is physically implausible for a BlueROV2 (HoloOcean model has no rotational hydrodynamic damping)"
+  ]
+}

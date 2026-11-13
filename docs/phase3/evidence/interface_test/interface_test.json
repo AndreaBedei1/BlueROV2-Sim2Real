@@ -1,0 +1,149 @@
+{
+  "checks": [
+    {
+      "check": "telemetry_received",
+      "pass": true,
+      "mode": "MANUAL",
+      "depth": 1.004
+    },
+    {
+      "check": "initial_state_defined",
+      "pass": true,
+      "depth": 1.006
+    },
+    {
+      "check": "mode_manual",
+      "pass": true,
+      "result": "accepted"
+    },
+    {
+      "check": "arm",
+      "pass": true,
+      "result": "accepted"
+    },
+    {
+      "check": "teleop_ascend_depth_decreases",
+      "pass": true,
+      "depth_change_m": -0.964
+    },
+    {
+      "check": "teleop_descend_depth_increases",
+      "pass": true,
+      "depth_change_m": 1.207
+    },
+    {
+      "check": "teleop_yaw_right_positive_rate",
+      "pass": true,
+      "max_yaw_rate": 9.222
+    },
+    {
+      "check": "teleop_yaw_left_negative_rate",
+      "pass": true,
+      "min_yaw_rate": -9.165
+    },
+    {
+      "check": "teleop_forward_motor_mix",
+      "pass": true,
+      "servo1_4": [
+        1420,
+        1420,
+        1580,
+        1580
+      ],
+      "expected": "M1,M2 < 1500 < M3,M4 (forward factors -1,-1,+1,+1)"
+    },
+    {
+      "check": "teleop_lateral_motor_mix",
+      "pass": true,
+      "servo1_4": [
+        1580,
+        1420,
+        1580,
+        1420
+      ],
+      "expected": "lateral factors +1,-1,+1,-1"
+    },
+    {
+      "check": "gripper_open_output9_max",
+      "pass": true,
+      "servo9": 1900,
+      "state": "open"
+    },
+    {
+      "check": "gripper_close_output9_min",
+      "pass": true,
+      "servo9": 1100,
+      "state": "close"
+    },
+    {
+      "check": "lights1_brighter_then_dimmer_output13",
+      "pass": true,
+      "pwm_sequence": [
+        1100,
+        1500,
+        1300
+      ],
+      "level": 0.25
+    },
+    {
+      "check": "lights2_brighter_output14",
+      "pass": true,
+      "pwm_sequence": [
+        1100,
+        1400
+      ],
+      "note": "shift pairing of lights2 buttons is an assumption (parameter backup pending)"
+    },
+    {
+      "check": "camera_tilt_up_down_center_output16",
+      "pass": true,
+      "pwm": [
+        1500,
+        1100,
+        1608,
+        1500
+      ],
+      "mount_status_deg": [
+        45.0,
+        -12.29,
+        0.0
+      ],
+      "decoded_deg": [
+        0.0
+      ],
+      "note": "SERVO16_REVERSED=1: tilt up lowers the PWM"
+    },
+    {
+      "check": "mode_stabilize",
+      "pass": true,
+      "result": "accepted"
+    },
+    {
+      "check": "mode_alt_hold",
+      "pass": true,
+      "result": "accepted"
+    },
+    {
+      "check": "D2_alt_hold_entry_transient_le_0.10m",
+      "pass": false,
+      "max_depth_deviation_m": 0.577,
+      "note": "known open FAIL from Phase 2 (ArduSub 4.1.2 integrator init); reported, not compensated"
+    },
+    {
+      "check": "depth_target_via_client",
+      "pass": true,
+      "final_error_m": 0.009
+    },
+    {
+      "check": "mode_manual_again",
+      "pass": true
+    },
+    {
+      "check": "disarm",
+      "pass": true,
+      "result": "accepted"
+    }
+  ],
+  "passed": 20,
+  "total": 21
+}

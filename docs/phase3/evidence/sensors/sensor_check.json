@@ -1,0 +1,44 @@
+{
+ "checks": [
+  {
+   "check": "video_sdp_h264_pt96",
+   "pass": true,
+   "sdp": "v=0\no=- 0 0 IN IP4 127.0.0.1\ns=No Name\nc=IN IP4 127.0.0.1\nt=0 0\na=tool:libavformat 63.1.102\nm=video 5610 RTP/AVP 96\na=framerate:10\na=rtpmap:96 H264/90000\na=fmtp:96 packetization-mode=1"
+  },
+  {
+   "check": "video_stream_decodes_h264_640x360_about_10fps",
+   "pass": true,
+   "frames_in_6s": 60,
+   "stream": [
+    "h264",
+    "640",
+    "360"
+   ]
+  },
+  {
+   "check": "ping1d_initialize_with_brping",
+   "pass": true
+  },
+  {
+   "check": "ping1d_distance_tracks_vehicle_depth",
+   "pass": true,
+   "n": 18,
+   "depth_range_m": 1.561,
+   "floor_depth_spread_m": 0.008,
+   "note": "floor depth = depth + Ping1D altitude at three hold depths"
+  },
+  {
+   "check": "distance_sensor_component194_matches_ping",
+   "pass": true,
+   "max_diff_m": 0.04800000000000182,
+   "note": "DISTANCE_SENSOR at 5 Hz vs Ping1D on request: small lag expected"
+  },
+  {
+   "check": "camera_tilt_changes_rendered_view",
+   "pass": true,
+   "mean_abs_pixel_diff": 10.8,
+   "mount_tilt_deg": 0.0,
+   "note": "DIRECTION is verified by inspecting camera_tilt_up/down.png (luma is not a reliable cue)"
+  }
+ ]
+}

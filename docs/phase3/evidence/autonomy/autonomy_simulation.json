@@ -1,0 +1,87 @@
+{
+  "completed": true,
+  "decisions": [
+    {
+      "command": "set_mode",
+      "status": "accepted",
+      "detail": "MANUAL"
+    },
+    {
+      "command": "arm",
+      "status": "accepted",
+      "detail": ""
+    },
+    {
+      "command": "set_mode",
+      "status": "accepted",
+      "detail": "ALT_HOLD"
+    },
+    {
+      "command": "set_depth_target",
+      "status": "sent",
+      "detail": "1.5 m (no ACK in MAVLink)"
+    },
+    {
+      "command": "set_depth_target",
+      "status": "sent",
+      "detail": "2.5 m (no ACK in MAVLink)"
+    },
+    {
+      "command": "set_depth_target",
+      "status": "sent",
+      "detail": "1.5 m (no ACK in MAVLink)"
+    },
+    {
+      "command": "button:mount_tilt_down",
+      "status": "sent",
+      "detail": ""
+    },
+    {
+      "command": "button:lights1_brighter",
+      "status": "sent",
+      "detail": ""
+    },
+    {
+      "command": "button:mount_center",
+      "status": "sent",
+      "detail": ""
+    },
+    {
+      "command": "set_mode",
+      "status": "accepted",
+      "detail": "MANUAL"
+    },
+    {
+      "command": "disarm",
+      "status": "accepted",
+      "detail": ""
+    }
+  ],
+  "depth_steps": [
+    {
+      "target_m": 1.5,
+      "reached": true,
+      "depth_m": 1.55
+    },
+    {
+      "target_m": 2.5,
+      "reached": true,
+      "depth_m": 2.521
+    },
+    {
+      "target_m": 1.5,
+      "reached": true,
+      "depth_m": 1.513
+    }
+  ],
+  "observed_final": {
+    "mode": "MANUAL",
+    "armed": true,
+    "depth_m": 1.509,
+    "mount_tilt_deg": 0.0,
+    "lights1_level": 0.125,
+    "gripper_cmd": null
+  },
+  "profile": "simulation",
+  "rejected_locally": 0
+}

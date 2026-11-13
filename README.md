@@ -14,6 +14,8 @@ Study how faithfully an underwater simulation can reproduce the dynamics and sen
 
 **Phase 2 — Minimal ArduSub SITL ↔ HoloOcean connection: implemented and tested on a development PC** (ArduSub 4.1.2 SITL in lockstep with HoloOcean 2.3.0, depth control, 30-minute stability run). Results, PASS/FAIL per test and open items: [docs/phase2](docs/phase2/README.md); how to repeat: [REPRODUCE](docs/phase2/REPRODUCE.md).
 
+**Phase 3 — Common interface for simulated and physical BlueROV2: implemented and tested in simulation.** QGroundControl and the joystick pilot the simulated vehicle through ArduSub 4.1.2 SITL exactly as the real vehicle at the MAVLink level; one autonomy client with `simulation` and `real_readonly` profiles; accessories and sensor interfaces with an explicit status per interface. See [docs/phase3/IMPLEMENTATION.md](docs/phase3/IMPLEMENTATION.md) and the [QGC guide](docs/phase3/QGC_GUIDE.md).
+
 Work performed:
 - Inventory of the modified BlueROV2 Heavy, its onboard software, sensors and accessories.
 - Review of ArduSub and external simulation interfaces.

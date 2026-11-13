@@ -1,0 +1,1 @@
+{"frames_in": 489, "frames_out": 489, "ping1d_requests": 62, "last_tilt_deg": 0.0, "errors": [], "note": "sensor-on runs are NOT valid for Phase 2 timing metrics (10 Hz camera renders exceed the 5 ms tick budget)"}

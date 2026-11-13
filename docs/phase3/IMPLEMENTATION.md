@@ -58,9 +58,36 @@ SET_POSITION_TARGET_GLOBAL_INT) and reads standard telemetry.
 | Pilot-input failsafe (FS_PILOT_INPUT) | active on vehicle | compiled out of SITL | Awaiting physical verification |
 | real_readonly profile on the vehicle | BlueOS stream | tested with replay and a fake autopilot | Awaiting physical verification |
 
-## 3. Test results (final batch, commit FINAL_COMMIT)
+## 3. Test results (final batch: commit `ed5dcd5`; QGC session re-run on `be88f29` after the isolation fix)
 
-FINAL_RESULTS_TABLE
+All runs from a clean checkout (`repo_dirty=0`), one HoloOcean engine at a
+time, recorded manifests. Evidence: [evidence/](evidence/).
+
+| # | Test | Result | Evidence |
+|---|---|---|---|
+| 1 | Unit and contract tests (protocol, frames, thrusters, bridge, client incl. zero-byte read-only check, sensors vs `brping`) | **PASS** 60/60 (+1 private-data test skipped; passes locally on a real Surveyor log) | `pytest` |
+| 2 | Phase 2 regression (D1, E, lockstep) on the Phase 3 code | **PASS**: D1 0.000 m; E 5/5, final errors ≤ 1.0 cm; 0 lost / 0 resent frames | [report_DE.json](evidence/phase2_regression/report_DE.json) |
+| 3 | D2 ALT_HOLD entry transient (known Phase 2 failure) | **FAIL** (unchanged, reported): 0.577 m | same |
+| 4 | QGC operator session through the GUI: arm (slide-confirm), 8 stick directions (virtual joystick), Stabilize → Depth Hold → Manual, disarm; MANUAL_CONTROL 255/190 → 17 at ~25 Hz, z 0..1000 with 500 neutral; ACKs accepted, no failsafe | **PASS** 13/13 | [qgc_session_report.json](evidence/qgc_session/qgc_session_report.json), screenshots |
+| 5 | QGC isolation: only listener is the simulation video port (5610); no 14550 / 5600 | **PASS** (enforced at start-up) | run manifest |
+| 6 | Client interface test in SITL: telemetry, defined initial state, modes, arm/disarm, teleop up/down/yaw, forward/lateral motor mix, gripper open/close (output 9), lights 1 and 2 (outputs 13/14), camera tilt up/down/center (output 16 = MOUNT_STATUS), depth target | **PASS** 20/21; the only FAIL is D2 | [interface_test.json](evidence/interface_test/interface_test.json) |
+| 7 | Same autonomy program, `simulation` | **PASS**: 3/3 depth targets (1.550, 2.521, 1.513 m), tilt and lights commanded, disarmed | [autonomy_simulation.json](evidence/autonomy/autonomy_simulation.json) |
+| 8 | Same autonomy program, `replay` of the recorded session (read-only) | **PASS**: completed, 8/8 commands rejected locally, nothing transmitted | [autonomy_replay.json](evidence/autonomy/autonomy_replay.json) |
+| 9 | Video: SDP H.264/90000 PT 96; independent decoder: h264 640×360, 60 frames in 6 s | **PASS** | [sensor_check.json](evidence/sensors/sensor_check.json), [video.sdp](evidence/sensors/video.sdp) |
+| 10 | Ping1D via Blue Robotics `brping` client; floor depth = depth + altitude constant within 8 mm over 1.56 m of vertical motion | **PASS** | same |
+| 11 | DISTANCE_SENSOR component 194 vs Ping1D | **PASS** (max difference 0.048 m) | same |
+| 12 | Camera tilt rotates the rendered view in the commanded direction | **PASS** (direction checked on the frames: up = open water, down = seafloor) | [up](evidence/sensors/camera_tilt_up.png), [down](evidence/sensors/camera_tilt_down.png) |
+| 13 | Surveyor replay: real laboratory log, every checksum valid, device frames streamed byte-for-byte after SET_PING_PARAMETERS | **PASS** (local private data; test skipped in CI without it) | `tests/test_sensors.py` |
+| 14 | real_readonly against the physical vehicle | **NOT RUN** — vehicle not connected (awaiting physical verification) | — |
+| 15 | Physical gamepad through QGC | **NOT RUN** — no readable joystick device on the test machine | — |
+
+Anomaly reported (not a test failure): yaw rates of 9–23 rad/s under full yaw
+input are physically implausible; the HoloOcean BlueROV2 has no rotational
+hydrodynamic damping (Phase 4 calibration).
+
+With `--sim-sensors`, the 10 Hz camera renders make some ticks exceed the 5 ms
+real-time budget (lockstep and simulated-time numerics unaffected); such runs
+are not used for Phase 2 timing metrics.
 
 ## 4. Findings and corrections during Phase 3
 
@@ -94,6 +121,7 @@ cross-user engine-count race.
 
 ## 6. Open items
 
+QGC listens for video on all interfaces (QGC behaviour, port 5610 only).
 Physical gamepad test; full parameter backup (buttons, PSC_ACCZ_FF, lights2
 pairing); vehicle Ping1D validity; real_readonly against the vehicle (needs a
 connected vehicle, still read-only); physical wiring/propellers; video at the
