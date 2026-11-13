@@ -70,14 +70,15 @@ class UdpListenTransport:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((host, port))
         self.sock.settimeout(0.1)
-        self.peer: Optional[Tuple[str, int]] = None
+        self.peer: Optional[Tuple[str, int]] = None      # set by the client only from autopilot frames
+        self.last_addr: Optional[Tuple[str, int]] = None
 
     def recv(self) -> bytes:
         try:
             data, addr = self.sock.recvfrom(65536)
         except socket.timeout:
             return b""
-        self.peer = addr
+        self.last_addr = addr
         return data
 
     def send(self, data: bytes):
@@ -165,7 +166,8 @@ class Observation:
 # --- client --------------------------------------------------------------------------
 
 class VehicleClient:
-    def __init__(self, profile: str, transport, autopilot_sysid: int, source_component: int = 191):
+    def __init__(self, profile: str, transport, autopilot_sysid: int, source_component: int = 191,
+                 pilot: bool = True):
         if profile not in ("simulation", "real_readonly", "replay"):
             raise ValueError(profile)
         self.profile = profile
@@ -176,7 +178,12 @@ class VehicleClient:
             raise ValueError("read-only profile requires a non-writable transport")
         self.mav_in = mavlink.MAVLink(None)
         self.mav_in.robust_parsing = True
-        self.mav_out = mavlink.MAVLink(_Writer(transport), srcSystem=C_GCS_SYSID, srcComponent=source_component)
+        self.source_component = source_component
+        # read-only profiles get no encoder at all: there is no object able to emit MAVLink
+        self.mav_out = None if self.read_only else mavlink.MAVLink(_Writer(transport), srcSystem=C_GCS_SYSID,
+                                                                    srcComponent=source_component)
+        self.rx_error: Optional[str] = None
+        self.foreign_pilot: Optional[Tuple[int, int]] = None
         self.obs = Observation()
         self.rejected_locally = 0
         self.foreign_messages = 0
@@ -186,12 +193,15 @@ class VehicleClient:
         self._buttons = 0
         self._pilot_thread = None
         self._stop = threading.Event()
+        self._stop_pilot = threading.Event()
         self._rx_thread = threading.Thread(target=self._rx_loop, daemon=True)
         self._rx_thread.start()
-        if not self.read_only:
-            # Like QGroundControl with a joystick: GCS HEARTBEAT at 1 Hz and MANUAL_CONTROL at 20 Hz
-            # (neutral unless commanded) for the whole session. ArduSub 4.1.2 otherwise falls back to
-            # RC inputs and, with the vehicle's FS_GCS_ENABLE=2 / FS_PILOT_INPUT=2, to its failsafes.
+        if not self.read_only and pilot:
+            # As a ground station with a joystick: GCS HEARTBEAT at 1 Hz and MANUAL_CONTROL at 20 Hz
+            # (QGC measured ~25 Hz), neutral unless commanded. Without it ArduSub 4.1.2 falls back to RC
+            # inputs after RC_OVERRIDE_TIME (3 s) and, armed, to the GCS failsafe (FS_GCS_ENABLE=2,
+            # 2.5 s). ONE pilot source only: if another station's MANUAL_CONTROL is seen (e.g. QGC with a
+            # joystick), this stream stops (see foreign_pilot) to avoid interleaved input.
             self._ensure_pilot_stream()
 
     # -- constructors --------------------------------------------------------------
@@ -221,10 +231,10 @@ class VehicleClient:
         while not self._stop.is_set():
             try:
                 data = self.transport.recv()
-            except OSError:
-                if self._stop.is_set():
-                    return          # socket closed by close()
-                raise
+            except OSError as e:
+                if not self._stop.is_set():
+                    self.rx_error = repr(e)      # surfaced through link_ok()
+                return
             if not data:
                 continue
             for m in self.mav_in.parse_buffer(data) or []:
@@ -238,15 +248,23 @@ class VehicleClient:
         if t == "BAD_DATA":
             return
         src, comp = m.get_srcSystem(), m.get_srcComponent()
+        if t == "MANUAL_CONTROL" and src == C_GCS_SYSID and comp != self.source_component:
+            if self.foreign_pilot is None:
+                self.foreign_pilot = (src, comp)
+                self._stop_pilot.set()           # another pilot (e.g. QGC joystick): stop our stream
+            return
         if src != self.sysid:
             self.foreign_messages += 1        # e.g. other GCS heartbeats: ignored, counted
             return
+        if comp == 1 and getattr(self.transport, "last_addr", None) is not None:
+            self.transport.peer = self.transport.last_addr     # reply path latched on autopilot frames only
         tb = getattr(m, "time_boot_ms", None)
         with self._lock:
             if t == "HEARTBEAT" and comp == 1:
                 self._set("armed", bool(m.base_mode & mavlink.MAV_MODE_FLAG_SAFETY_ARMED), None)
                 self._set("mode", C.MODE_NAMES.get(m.custom_mode, f"UNKNOWN_{m.custom_mode}"), None)
                 self._set("system_status", m.system_status, None)
+                self._set("heartbeat", True, None)
             elif t == "ATTITUDE":
                 self._set("attitude_rpy_rad", (m.roll, m.pitch, m.yaw), tb)
                 self._set("rates_frd_rad_s", (m.rollspeed, m.pitchspeed, m.yawspeed), tb)
@@ -257,7 +275,7 @@ class VehicleClient:
                 self._set("pressure_hpa", m.press_abs, tb)
                 self._set("water_temp_c", m.temperature / 100.0, tb)
             elif t == "SYS_STATUS":
-                self._set("battery_v", m.voltage_battery / 1000.0, None)
+                self._set("battery_v", None if m.voltage_battery == 65535 else m.voltage_battery / 1000.0, None)
             elif t == "SERVO_OUTPUT_RAW":
                 servos = tuple(getattr(m, f"servo{i}_raw", 0) or 0 for i in range(1, 17))
                 tbs = m.time_usec // 1000
@@ -270,14 +288,18 @@ class VehicleClient:
             elif t == "MOUNT_STATUS":
                 self._set("mount_tilt_deg", m.pointing_a / 100.0, None)
             elif t == "DISTANCE_SENSOR" and comp == 194:      # Ping1D service component only
-                valid = m.min_distance <= m.current_distance <= m.max_distance and \
-                    getattr(m, "signal_quality", 0) != 1
+                q = getattr(m, "signal_quality", 0)      # 0 = unknown, 1 = invalid, 100 = best (MAVLink)
+                valid = m.min_distance <= m.current_distance <= m.max_distance and q >= C.RANGE_MIN_QUALITY
                 self._set("rangefinder_m", m.current_distance / 100.0 if valid else None, tb)
                 self._set("rangefinder_quality", getattr(m, "signal_quality", None), tb)
             elif t == "STATUSTEXT":
                 self._set("last_statustext", m.text, None)
             for cb in list(self._listeners):
                 cb(m)
+
+    def link_ok(self, max_age_s: float = 3.0) -> bool:
+        """Autopilot heartbeat seen within max_age_s and receive thread alive."""
+        return self.rx_error is None and self.obs.get("heartbeat", max_age_s) is True
 
     def wait(self, predicate: Callable[[Observation], bool], timeout_s: float) -> bool:
         t_end = time.monotonic() + timeout_s
@@ -373,7 +395,7 @@ class VehicleClient:
 
     def _pilot_loop(self, rate_hz: float = 20.0):
         t_hb = 0.0
-        while not self._stop.is_set():
+        while not self._stop.is_set() and not self._stop_pilot.is_set():
             with self._lock:
                 s, b = dict(self._sticks), self._buttons
             try:

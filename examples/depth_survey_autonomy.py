@@ -36,7 +36,7 @@ def run(vehicle: VehicleClient, log) -> dict:
         log("abort: no vehicle telemetry")
         return {"completed": False, "reason": "no telemetry"}
     log(f"vehicle: mode={vehicle.obs.get('mode')} armed={vehicle.obs.get('armed')} "
-        f"depth={vehicle.obs.get('depth_m'):.2f} m")
+        f"depth={vehicle.obs.get('depth_m')} m link_ok={vehicle.link_ok()}")
     decisions = []
 
     def act(result):
@@ -57,7 +57,7 @@ def run(vehicle: VehicleClient, log) -> dict:
         vehicle.wait(lambda o: not settled(o), 5)                      # the transient starts
         ok = vehicle.wait(settled, 60) and (time.sleep(10) or settled(vehicle.obs))
         log(f"ALT_HOLD entry settled={ok} after {time.monotonic() - t_wait:.1f} s, "
-            f"depth={vehicle.obs.get('depth_m'):.3f} m")
+            f"depth={vehicle.obs.get('depth_m')} m")
     reached = []
     for target in DEPTHS_M:
         sent = hold_ok and act(vehicle.set_depth_target(target))
@@ -65,12 +65,13 @@ def run(vehicle: VehicleClient, log) -> dict:
             decisions.append({"command": f"wait_depth_{target}", "status": "skipped", "detail": "target not sent"})
             continue
         def near(o):
-            return o.get("depth_m") is not None and abs(o.get("depth_m") - target) < TOLERANCE_M
+            d = o.get("depth_m", max_age_s=1.0)              # decide on fresh data only
+            return d is not None and abs(d - target) < TOLERANCE_M
         ok = vehicle.wait(near, STEP_TIMEOUT_S)
         time.sleep(15.0)                                  # within tolerance after settling (Phase 2: <= 12 s)
         ok = ok and near(vehicle.obs)
         reached.append({"target_m": target, "reached": ok, "depth_m": vehicle.obs.get("depth_m")})
-        log(f"depth target {target} m reached={ok} depth={vehicle.obs.get('depth_m'):.3f}")
+        log(f"depth target {target} m reached={ok} depth={vehicle.obs.get('depth_m')} link_ok={vehicle.link_ok()}")
     act(vehicle.camera_tilt("down", hold_s=1.5))
     act(vehicle.lights(1, True))
     time.sleep(1.0)

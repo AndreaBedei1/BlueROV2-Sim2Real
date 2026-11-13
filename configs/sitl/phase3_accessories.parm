@@ -1,7 +1,10 @@
 # ArduSub 4.1.2 SITL overlay for Phase 3: accessories and joystick buttons.
 # Loaded AFTER configs/sitl/phase2_ardusub412.parm (which is unchanged).
-# Values reproduce the laboratory vehicle's backup of 2026-10-05 as published in
-# docs/phase1/hardware/hardware-inventory.it.md §2.2. SIMULATION ONLY.
+# The listed values reproduce the laboratory vehicle's backup of 2026-10-05 as published
+# in docs/phase1/hardware/hardware-inventory.it.md §2.2. Buttons NOT listed keep the
+# values of ArduPilot's SITL sub.parm, which differ from the firmware defaults (e.g.
+# BTN0/1/2/3): joystick button parity beyond the listed functions is NOT established.
+# SIMULATION ONLY.
 # Button/function codes checked in ArduSub 4.1.2 AP_JSButton.h.
 
 # Camera tilt: mount driver "servo" on output 16, reversed, +-45 deg, RC8 input
@@ -37,8 +40,8 @@ BTN9_SFUNCTION    77     # servo_1 max momentary
 BTN13_SFUNCTION   35     # lights2 brighter
 BTN14_SFUNCTION   36     # lights2 dimmer
 
-# Failsafes of the vehicle backup (hardware-inventory.it.md §8): a client must keep a
-# GCS heartbeat and a continuous MANUAL_CONTROL stream, as QGroundControl does.
+# Failsafes of the vehicle backup (hardware-inventory.it.md §8). FS_GCS_ENABLE is active in
+# SITL; FS_PILOT_INPUT is compiled out of SITL builds (failsafe.cpp), set for parity only.
 FS_GCS_ENABLE     2
 FS_PILOT_INPUT    2
 FS_PILOT_TIMEOUT  3

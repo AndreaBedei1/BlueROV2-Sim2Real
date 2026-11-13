@@ -60,6 +60,7 @@ ACCESSORY_OUTPUTS = {"gripper": 9, "lights1": 13, "lights2": 14, "camera_tilt": 
 PWM_MIN, PWM_MAX = 1100, 1900
 TILT_RANGE_DEG = (-45.0, 45.0)      # MNT_ANGMIN/MAX_TIL
 TILT_SERVO_REVERSED = True          # SERVO16_REVERSED = 1
+RANGE_MIN_QUALITY = 50              # BlueOS sends signal_quality = max(1, Ping1D confidence %)
 
 
 @dataclass
@@ -94,23 +95,29 @@ class Contract:
         "attitude": "ATTITUDE",
         "depth_m": "-GLOBAL_POSITION_INT.relative_alt/1000 (EKF depth from the external pressure sensor). "
                    "VFR_HUD.alt is NOT used (constant on the vehicle, Phase 1)",
-        "climb_rate_mps": "-GLOBAL_POSITION_INT.vz/100 is down-positive; climb = -vz/100",
+        "climb_rate_mps": "climb (up-positive) = -GLOBAL_POSITION_INT.vz/100 (vz is NED, down-positive)",
         "pressure_hpa": "SCALED_PRESSURE2.press_abs (external depth sensor)",
         "battery_v": "SYS_STATUS.voltage_battery/1000 (simulated value in SITL)",
-        "servo_us": "SERVO_OUTPUT_RAW servo1..16 (outputs 1-8 motors, 9/13/14/16 accessories)",
-        "mount_tilt_deg": "MOUNT_STATUS.pointing_a/100 (requested mount angle)",
-        "rangefinder_m": "DISTANCE_SENSOR from the Ping1D service (component 194) only; "
-                         "autopilot-internal rangefinder messages are ignored",
+        "servo_us": "SERVO_OUTPUT_RAW servo1..16; outputs 9/13/14/16 accessories. Outputs 1-8 (motors) are a "
+                    "FUNCTIONAL APPROXIMATION: SITL uses MOT_n_DIRECTION=+1, the vehicle -1 on motors 1,2,5,8, "
+                    "so motor PWM signs differ between environments; use the logical mix, not raw motor PWM",
+        "mount_tilt_deg": "MOUNT_STATUS.pointing_a/100 (mount body-frame output angle, AP_Mount_Servo)",
+        "rangefinder_m": "DISTANCE_SENSOR from the Ping1D service (component 194, sysid of the vehicle "
+                         "assumed) only, signal_quality >= RANGE_MIN_QUALITY; 0 (unknown) / 1 (invalid) -> None",
+        "link_ok": "autopilot HEARTBEAT within 3 s and receive thread alive; decide only on fresh data",
         "horizontal_position": "NOT AVAILABLE: no DVL/USBL/GPS underwater; EKF horizontal position is "
                                "dead reckoning and must not be used (ROVL unverified)",
     })
     commands: Dict[str, str] = field(default_factory=lambda: {
         "arm/disarm": "COMMAND_LONG MAV_CMD_COMPONENT_ARM_DISARM, result from COMMAND_ACK",
         "set_mode": "SET_MODE (custom mode), confirmed by HEARTBEAT",
-        "manual_control": "MANUAL_CONTROL x,y,r -1000..1000, z 0..1000 (500 neutral), buttons; "
-                          ">= 10 Hz or ArduSub's pilot-input failsafe (FS_PILOT_TIMEOUT 3 s) acts",
-        "depth_target": "SET_POSITION_TARGET_GLOBAL_INT, position only, alt = -depth, ALT_HOLD only; "
-                        "no ACK exists for this message (observe depth)",
+        "manual_control": "MANUAL_CONTROL x,y,r -1000..1000, z 0..1000 (500 neutral), buttons; sent "
+                          "continuously by ONE pilot source (QGC ~25 Hz, client 20 Hz; a design choice). RC "
+                          "overrides expire after 3 s; GCS failsafe 2.5 s when armed. FS_PILOT_INPUT is "
+                          "compiled out of SITL (awaiting physical verification)",
+        "depth_target": "SET_POSITION_TARGET_GLOBAL_INT, position only, alt = -depth, ALT_HOLD only; ArduSub "
+                        "uses alt as z relative to the EKF origin and ignores frame/lat/lon; equals depth only "
+                        "when the EKF origin is at the surface; no ACK exists (observe depth)",
         "accessories": "MANUAL_CONTROL buttons mapped by BTNn_FUNCTION (gripper, lights, camera tilt)",
     })
     items: List[InterfaceItem] = field(default_factory=list)

@@ -74,18 +74,26 @@ def main():
         name = MODE_NAMES.get(m.custom_mode, m.custom_mode)
         if not modes or modes[-1] != name:
             modes.append(name)
-    checks.append({"check": "qgc_arm_then_disarm", "pass": True in armed and armed[-1] is False,
-                   "arm_disarm_acks": [(c, r) for _, c, r in acks if c == 400]})
-    checks.append({"check": "qgc_mode_sequence", "pass": modes[-3:] == ["STABILIZE", "ALT_HOLD", "MANUAL"]
-                   or ["STABILIZE", "ALT_HOLD", "MANUAL"] == [x for x in modes if x != "MANUAL" or True][-3:],
+    arm_acks = [(c, r) for _, c, r in acks if c == 400]
+    st = [m.text for _, m in msgs if m.get_type() == "STATUSTEXT"]
+    checks.append({"check": "qgc_arm_then_disarm", "pass": True in armed and armed[-1] is False
+                   and len(arm_acks) >= 2 and all(r == 0 for _, r in arm_acks)
+                   and not any("failsafe" in s.lower() for s in st), "arm_disarm_acks": arm_acks})
+    checks.append({"check": "qgc_mode_sequence", "pass": modes[-3:] == ["STABILIZE", "ALT_HOLD", "MANUAL"],
                    "modes_seen": modes})
+    allz = [m.z for _, m in mc]
+    checks.append({"check": "qgc_throttle_range_0_1000", "pass": min(allz) < 100 and max(allz) > 900
+                   and min(allz) >= 0 and max(allz) <= 1000, "z_min_max": [min(allz), max(allz)]})
+    yaw = [abs(c.get("yaw_rate_extreme") or 0) for c in checks if "yaw_rate_extreme" in c]
+    anomalies = ([f"yaw rate {max(yaw):.1f} rad/s is physically implausible for a BlueROV2 (HoloOcean "
+                  f"model has no rotational hydrodynamic damping)"] if yaw and max(yaw) > 3 else [])
     z_neutral = [m.z for t, m in mc[:50]]
     checks.append({"check": "qgc_throttle_neutral_is_500", "pass": z_neutral and all(z == 500 for z in z_neutral),
                    "first_values": z_neutral[:5]})
     src = sorted({(m.get_srcSystem(), m.get_srcComponent(), m.target) for _, m in mc})
     checks.append({"check": "qgc_manual_control_source_target", "pass": src == [(255, 190, 17)], "src_comp_target": src})
     out = {"checks": checks, "passed": sum(c["pass"] for c in checks), "total": len(checks),
-           "manual_control_messages": len(mc)}
+           "manual_control_messages": len(mc), "anomalies": anomalies}
     (run / "qgc_session_report.json").write_text(json.dumps(out, indent=2, default=str))
     for c in checks:
         print(("PASS" if c["pass"] else "FAIL"), {k: v for k, v in c.items() if k != "pass"})

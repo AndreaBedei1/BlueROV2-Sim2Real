@@ -17,8 +17,10 @@ Endpoints (all bound to 127.0.0.1):
 Differences from the vehicle (documented, not hidden): transport ports and
 the TCP link used by QGC in simulation (the vehicle pushes UDP to the topside
 computer on 14550); no routing table by system/component id - every message
-from one side goes to every endpoint of the other side, which is what BlueOS'
-default configuration does for a single vehicle.
+from one side goes to every endpoint of the other side. mavlink-router (BlueOS)
+routes targeted messages only to endpoints that have seen the target, so e.g.
+a companion's MANUAL_CONTROL reaches QGC here but not on the vehicle (not
+verified on BlueOS).
 """
 from __future__ import annotations
 
@@ -109,7 +111,7 @@ class MavlinkRouter:
                 if time.monotonic() - t0 > self.cfg.connect_timeout_s:
                     raise
                 time.sleep(0.5)
-        m.setblocking(False)
+        m.settimeout(2.0)              # blocking sends with timeout: no partial-send crash
         m.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.master = m
         self.sel.register(m, selectors.EVENT_READ, ("master", None))
@@ -184,7 +186,7 @@ class MavlinkRouter:
                     if addr[0] != LOOPBACK:
                         c.close()
                         continue
-                    c.setblocking(False)
+                    c.settimeout(2.0)
                     self.tcp_clients[c] = _Splitter()
                     self.sel.register(c, selectors.EVENT_READ, ("tcp_client", None))
                 elif kind == "tcp_client":
