@@ -42,7 +42,7 @@ class Observation:
         return float(self.position_ned[2])
 
 
-def holo_scenario(tps: int, start_location, world: str = "SimpleUnderwater") -> dict:
+def holo_scenario(tps: int, start_location, world: str = "SimpleUnderwater", extra_sensors=()) -> dict:
     return {
         "name": "bluerov2_sim2real_phase2",
         "world": world,
@@ -58,7 +58,7 @@ def holo_scenario(tps: int, start_location, world: str = "SimpleUnderwater") -> 
                 {"sensor_type": "DynamicsSensor", "socket": "COM",
                  "configuration": {"UseCOM": True, "UseRPY": True}},
                 {"sensor_type": "IMUSensor", "socket": "IMUSocket", "Hz": int(tps)},
-            ],
+            ] + list(extra_sensors),
             "control_scheme": 0,
             "location": list(start_location),
             "rotation": [0.0, 0.0, 0.0],
@@ -95,7 +95,8 @@ class HoldSchedule:
 
 class HoloOceanBackend:
     def __init__(self, tps: int = 200, start_location=(0.0, 0.0, 0.0), drag_compensation: bool = True,
-                 world: str = "SimpleUnderwater", hold: Optional[HoldSchedule] = None, holoocean_module=None):
+                 world: str = "SimpleUnderwater", hold: Optional[HoldSchedule] = None, holoocean_module=None,
+                 sensor_hub=None, extra_sensors=()):
         if holoocean_module is None:
             import holoocean as holoocean_module  # lazy: the mock path must not need it
         self.dt = 1.0 / tps
@@ -105,7 +106,9 @@ class HoloOceanBackend:
         self.allocator = HoloAllocator()
         self.schedule = hold
         self.hold = hold is not None
-        self.env = holoocean_module.make(scenario_cfg=holo_scenario(tps, start_location, world),
+        self.sensor_hub = sensor_hub
+        self._tilt_applied = None
+        self.env = holoocean_module.make(scenario_cfg=holo_scenario(tps, start_location, world, extra_sensors),
                                          show_viewport=False, verbose=False)
         self.agent = self.env.agents["auv0"]
         self.ticks = 0
@@ -120,6 +123,18 @@ class HoloOceanBackend:
 
     def release(self):
         self.hold = False
+
+    def on_servo(self, pwm16):
+        """Accessory outputs (Phase 3): only the camera tilt has a simulated effect."""
+        if self.sensor_hub is None:
+            return
+        tilt = self.sensor_hub.tilt_from_pwm(pwm16)
+        if tilt is not None and (self._tilt_applied is None or abs(tilt - self._tilt_applied) > 0.5):
+            cam = self.agent.sensors.get("RGBCamera")
+            if cam is not None:
+                cam.rotate([0.0, -tilt, 0.0])     # sign convention checked in docs/phase3 (camera run)
+                self._tilt_applied = tilt
+                self.sensor_hub.tilt_deg = tilt
 
     def close(self):
         if self.env is not None:
@@ -186,7 +201,10 @@ class HoloOceanBackend:
                       wrench_error=alloc.wrench_error, drag_comp_world_nwu=comp_world)
         s = self.env.step(alloc.forces)
         self.ticks += 1
-        return self._observe(s, extras)
+        obs = self._observe(s, extras)
+        if self.sensor_hub is not None:
+            self.sensor_hub.on_state(s)
+        return obs
 
 
 class MockBackend:

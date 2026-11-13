@@ -87,6 +87,9 @@ def main():
     ap.add_argument("--max-sim", type=float, default=None)
     ap.add_argument("--max-wall", type=float, default=None)
     ap.add_argument("--allow-dirty", action="store_true", help="run with uncommitted changes (recorded)")
+    ap.add_argument("--sim-sensors", action="store_true",
+                    help="Phase 3: camera (H.264/RTP) + Ping1D + DISTANCE_SENSOR + camera tilt (off by default)")
+    ap.add_argument("--ffmpeg", default=None, help="ffmpeg with libx264 for the video stream")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -125,8 +128,16 @@ def main():
     try:
         if args.backend == "holoocean":
             manifest["holoocean"] = holoocean_info()
+            hub, extra = None, ()
+            if args.sim_sensors:
+                from bluerov2_sim2real.sensors.sim_hub import CAMERA, RANGEFINDER, SimSensorHub
+                hub = SimSensorHub(out / "sensors", args.ffmpeg)
+                extra = (CAMERA, RANGEFINDER)
+                manifest["sim_sensors"] = {"camera": CAMERA, "rangefinder": RANGEFINDER, "video_udp": 5610,
+                                           "ping1d_udp": 19090, "distance_sensor_component": 194}
             backend = HoloOceanBackend(tps=args.rate, start_location=(0.0, 0.0, 0.0),
-                                       drag_compensation=not args.no_drag_compensation, hold=schedule)
+                                       drag_compensation=not args.no_drag_compensation, hold=schedule,
+                                       sensor_hub=hub, extra_sensors=extra)
             (out / "engine.pid").write_text(f"{backend.engine_pid}\n")
         else:
             backend = MockBackend(tps=args.rate, start_depth=0.0, hold=schedule is not None)
@@ -142,6 +153,12 @@ def main():
     finally:
         signal.signal(signal.SIGTERM, signal.SIG_IGN)   # do not interrupt the engine shutdown
         if backend is not None:
+            if getattr(backend, "sensor_hub", None) is not None:
+                hub_stats = {"frames_in": backend.sensor_hub.frames_in, "frames_out": backend.sensor_hub.frames_out,
+                             "ping1d_requests": backend.sensor_hub.ping.requests,
+                             "last_tilt_deg": backend.sensor_hub.tilt_deg}
+                (out / "sensors" / "hub_stats.json").write_text(json.dumps(hub_stats))
+                backend.sensor_hub.close()
             backend.close()
 
 

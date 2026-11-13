@@ -227,6 +227,8 @@ class Bridge:
 
                 if any(0 < p < 1100 or p > 1900 for p in pkt.pwm[:8]):
                     st.pwm_out_of_range_frames += 1
+                if hasattr(self.backend, "on_servo"):
+                    self.backend.on_servo(pkt.pwm)      # accessories (Phase 3); no effect on forces
                 thrusts = self.vehicle.pwm_to_thrusts(pkt.pwm)
                 wrench = self.vehicle.wrench(thrusts)
                 ts = time.perf_counter()
