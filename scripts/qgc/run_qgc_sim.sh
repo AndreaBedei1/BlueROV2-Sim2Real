@@ -39,6 +39,17 @@ autoConnectZeroConf=false
 autoConnectNmeaPort=Disabled
 udpListenPort=0
 
+[LinkManager]
+autoConnectUDP=false
+autoConnectPixhawk=false
+autoConnectSiKRadio=false
+autoConnectPX4Flow=false
+autoConnectLibrePilot=false
+autoConnectRTKGPS=false
+autoConnectZeroConf=false
+autoConnectNmeaPort=Disabled
+udpListenPort=0
+
 [LinkConfigurations]
 count=1
 Link0\\name=BlueROV2-SIM-loopback
@@ -50,7 +61,7 @@ Link0\\port=$PORT
 
 [Video]
 videoSource=UDP h.264 Video Stream
-udpUrl=127.0.0.1:$VIDEO_PORT
+udpPort=$VIDEO_PORT
 INI
 echo "qgc_appimage_sha256=$(sha256sum "$QGC_APPDIR/../QGroundControl.AppImage" 2>/dev/null | cut -d' ' -f1)" > "$STATE/qgc_manifest.txt"
 cd "$STATE"

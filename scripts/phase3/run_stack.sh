@@ -132,8 +132,11 @@ if [ "$QGC" != none ]; then
   # isolation is enforced, not only configured: QGC must not listen on the vehicle's UDP 14550
   sleep 15
   QPID=$(cat "$RUN_DIR/qgc/qgc.pid")
-  if ss -Hulnp 2>/dev/null | grep -E ":14550 " | grep -q "pid=$QPID,"; then die "QGroundControl listens on UDP 14550"; fi
-  echo "qgc_udp14550_listener=none" >> "$RUN_DIR/run_manifest.txt"
+  # vehicle telemetry (14550) and vehicle video (5600) ports must not be opened by this QGC
+  if ss -Hulnp 2>/dev/null | grep -E ":(14550|5600) " | grep -q "pid=$QPID,"; then
+    die "QGroundControl listens on a physical-vehicle port (14550/5600): isolation failed"
+  fi
+  echo "qgc_udp_listeners=$(ss -Hulnp 2>/dev/null | grep "pid=$QPID," | awk '{print $4}' | tr '\n' ' ')" >> "$RUN_DIR/run_manifest.txt"
 fi
 echo "bridge_pid=$BRIDGE_PID sitl_pid=$SITL_PID router_pid=$ROUTER_PID engine_pid=$(cat "$RUN_DIR/bridge/engine.pid" 2>/dev/null)" >> "$RUN_DIR/run_manifest.txt"
 echo "run_stack: ready (QGC=$QGC). MAVLink for clients: udp 127.0.0.1:14570 (listen), QGC: tcp 127.0.0.1:5880"
