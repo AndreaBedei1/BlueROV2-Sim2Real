@@ -1,6 +1,6 @@
 # Phase 3 — One common interface for simulated and physical BlueROV2
 
-**Status:** specification / implementation not yet performed.  
+**Status:** implemented and tested in simulation (2026-11-13) — see [IMPLEMENTATION.md](IMPLEMENTATION.md) for the interface status grid and the PASS/FAIL matrix.  
 **Primary simulator:** HoloOcean 2.3.0.  
 **Baseline:** Phase 2 on main (`ab1afe2`), tested with ArduSub 4.1.2 SITL.
 

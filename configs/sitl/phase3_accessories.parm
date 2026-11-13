@@ -1,0 +1,47 @@
+# ArduSub 4.1.2 SITL overlay for Phase 3: accessories and joystick buttons.
+# Loaded AFTER configs/sitl/phase2_ardusub412.parm (which is unchanged).
+# The listed values reproduce the laboratory vehicle's backup of 2026-10-05 as published
+# in docs/phase1/hardware/hardware-inventory.it.md §2.2. Buttons NOT listed keep the
+# values of ArduPilot's SITL sub.parm, which differ from the firmware defaults (e.g.
+# BTN0/1/2/3): joystick button parity beyond the listed functions is NOT established.
+# SIMULATION ONLY.
+# Button/function codes checked in ArduSub 4.1.2 AP_JSButton.h.
+
+# Camera tilt: mount driver "servo" on output 16, reversed, +-45 deg, RC8 input
+MNT_TYPE          1
+MNT_RC_IN_TILT    8
+MNT_ANGMIN_TIL    -4500
+MNT_ANGMAX_TIL    4500
+SERVO16_FUNCTION  7
+SERVO16_REVERSED  1
+
+# Lights: outputs 13 and 14 pass through RC9 / RC10, which ArduSub's joystick
+# code drives (lights1 / lights2)
+SERVO13_FUNCTION  59
+SERVO14_FUNCTION  60
+
+# Gripper: output 9 is ArduSub's SERVO_CHAN_1 for the servo_1 button functions
+# (function 0 = available to DO_SET_SERVO)
+SERVO9_FUNCTION   0
+
+# Joystick buttons (MANUAL_CONTROL.buttons bit n -> BTNn_*)
+BTN7_FUNCTION     21     # mount center
+BTN9_FUNCTION     22     # mount tilt up
+BTN10_FUNCTION    23     # mount tilt down
+BTN13_FUNCTION    33     # lights1 dimmer
+BTN14_FUNCTION    32     # lights1 brighter
+BTN3_SFUNCTION    63     # servo_1 min   (gripper)
+BTN4_SFUNCTION    64     # servo_1 max   (gripper)
+BTN10_SFUNCTION   76     # servo_1 min momentary
+BTN9_SFUNCTION    77     # servo_1 max momentary
+# ASSUMPTION awaiting the full parameter backup: the inventory records
+# "shift 35/36 = lights2" on buttons 13/14 without the per-button order; the
+# literal order is used here.
+BTN13_SFUNCTION   35     # lights2 brighter
+BTN14_SFUNCTION   36     # lights2 dimmer
+
+# Failsafes of the vehicle backup (hardware-inventory.it.md §8). FS_GCS_ENABLE is active in
+# SITL; FS_PILOT_INPUT is compiled out of SITL builds (failsafe.cpp), set for parity only.
+FS_GCS_ENABLE     2
+FS_PILOT_INPUT    2
+FS_PILOT_TIMEOUT  3

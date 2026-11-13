@@ -1,0 +1,71 @@
+{
+  "completed": true,
+  "decisions": [
+    {
+      "command": "set_mode",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "arm",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "set_mode",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "wait_depth_1.5",
+      "status": "skipped",
+      "detail": "target not sent"
+    },
+    {
+      "command": "wait_depth_2.5",
+      "status": "skipped",
+      "detail": "target not sent"
+    },
+    {
+      "command": "wait_depth_1.5",
+      "status": "skipped",
+      "detail": "target not sent"
+    },
+    {
+      "command": "button:mount_tilt_down",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "button:lights1_brighter",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "button:mount_center",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "set_mode",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    },
+    {
+      "command": "disarm",
+      "status": "rejected_locally",
+      "detail": "read-only profile: nothing transmitted"
+    }
+  ],
+  "depth_steps": [],
+  "observed_final": {
+    "mode": "MANUAL",
+    "armed": false,
+    "depth_m": 0.004,
+    "mount_tilt_deg": 0.0,
+    "lights1_level": null,
+    "gripper_cmd": null
+  },
+  "profile": "replay",
+  "rejected_locally": 8
+}
