@@ -27,7 +27,12 @@ SLIDER = (419, 731)
 
 
 class Gui:
-    def __init__(self, out: Path):
+    def __init__(self, out: Path, run_dir: Path):
+        # Safety: only ever drive the isolated QGC started by run_stack on its private display.
+        xauth = os.environ.get("XAUTHORITY", "")
+        if not xauth.startswith(str(run_dir.resolve()) + "/display/"):
+            raise SystemExit("refusing: not the private display of this run (could be a desktop QGC)")
+        self.qgc_pid = int((run_dir / "qgc" / "qgc.pid").read_text())
         self.out = out
         out.mkdir(parents=True, exist_ok=True)
         self.win = self._find_window()
@@ -52,6 +57,10 @@ class Gui:
                 if area > 400 * 300 and (best is None or area > best[1]):
                     best = (m.group(1), area)
             if best:
+                pid = subprocess.run([XDOTOOL, "getwindowpid", str(int(best[0], 16))],
+                                     capture_output=True, text=True).stdout.strip()
+                if pid != str(self.qgc_pid):
+                    raise SystemExit(f"refusing: window belongs to pid {pid}, not this run's QGC {self.qgc_pid}")
                 return best[0]
             time.sleep(1)
         raise RuntimeError("QGroundControl main window not found")
@@ -144,9 +153,10 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--settle", type=float, default=45.0, help="seconds to wait for QGC + vehicle release")
     a = ap.parse_args()
-    out = Path(a.out or Path(os.environ["RUN_DIR"]) / "qgc_gui")
+    run_dir = Path(os.environ["RUN_DIR"])
+    out = Path(a.out or run_dir / "qgc_gui")
     time.sleep(a.settle)
-    g = Gui(out)
+    g = Gui(out, run_dir)
     g.shot("connected")
     g.mark("start")
     g.arm(True)

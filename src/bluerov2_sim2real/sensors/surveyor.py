@@ -10,12 +10,18 @@ DEVICE_INFORMATION 4, JSON_WRAPPER 10, WATER_STATS 118. Everything else in a log
 replayed byte-for-byte but not interpreted.
 
 The replay server listens on TCP (loopback, configurable port; the device uses
-62312) and streams the recorded frames unchanged, paced by the recorded
-``pwr_up_msec`` time stamps, after the client enables pinging with
-SET_PING_PARAMETERS (3023, ping_enable = true) as the real device requires -
-or immediately with ``autostart=True``. It does not emulate request/response
-behaviour beyond that (e.g. it does not answer DEVICE_INFORMATION requests
-unless such a frame exists in the log).
+62312) and streams recorded frames unchanged, paced by the recorded
+``pwr_up_msec`` time stamps. By default only frames whose source id is the
+device (src 1) are sent; SonarView-host frames in the log (JSON session
+metadata src 0, MAVLINK_WRAPPER src 2) are dropped unless include_host_frames.
+So the stream is byte-exact to the *device frames of the log*, not a capture of
+the TCP stream itself. Device frames 3009/3010/14 are passed through without
+interpretation. Streaming starts when the client sends SET_PING_PARAMETERS with
+ping_enable = true (the documented way to start pinging) or immediately with
+``autostart=True``; afterwards client commands are ignored (no stop, no
+parameter changes, no request/response emulation). Pacing follows the time
+stamp of the last timed frame (ATTITUDE frames precede the ATOF of the same ping
+by up to ~0.3 s, so frames go out in small bursts).
 """
 from __future__ import annotations
 
@@ -112,8 +118,12 @@ def summarize(path) -> dict:
 class ReplayServer:
     """Serve recorded Surveyor frames over TCP on loopback, byte-for-byte."""
 
-    def __init__(self, path, port: int, autostart: bool = False, speed: float = 1.0, loop: bool = False):
-        self.frames = list(pp.iter_file(path))
+    def __init__(self, path, port: int, autostart: bool = False, speed: float = 1.0, loop: bool = False,
+                 include_host_frames: bool = False, device_src: int = 1):
+        frames = list(pp.iter_file(path))
+        self.frames = frames if include_host_frames else [f for f in frames if f.src == device_src]
+        if speed > 0 and not any(frame_time_ms(f) is not None for f in self.frames):
+            raise ValueError("log has no time-stamped device frames: cannot pace a replay")
         self.port, self.autostart, self.speed, self.loop = port, autostart, speed, loop
         self.srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -128,9 +138,9 @@ class ReplayServer:
         conn.settimeout(0.05)
         enabled = self.autostart
         parser = pp.Parser()
-        t0_wall, t0_dev = None, None
         try:
             while not self.stop.is_set():
+                t0_wall, t0_dev = None, None          # pacing restarts at every pass (pwr_up_msec restarts)
                 for f in self.frames:
                     while not enabled and not self.stop.is_set():
                         try:

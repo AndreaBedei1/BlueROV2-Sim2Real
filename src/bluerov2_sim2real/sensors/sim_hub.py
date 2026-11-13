@@ -44,6 +44,8 @@ class SimSensorHub:
         self.range_m: Optional[float] = None
         self.frames_in = self.frames_out = 0
         self.tilt_deg: Optional[float] = None
+        self.errors = []
+        self._range_seq = 0
         self._frame = None
         self._lock = threading.Lock()
         self._stop = threading.Event()
@@ -56,9 +58,13 @@ class SimSensorHub:
                  "-s", "640x360", "-r", "10", "-i", "-", "-c:v", "libx264", "-preset", "ultrafast",
                  "-tune", "zerolatency", "-g", "10", "-bf", "0", "-pix_fmt", "yuv420p",
                  "-f", "rtp", "-payload_type", "96", f"rtp://127.0.0.1:{video_port}", "-sdp_file", str(sdp)],
-                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=open(self.out / "ffmpeg.log", "w"))
+                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=self._open_log("ffmpeg.log"))
             threading.Thread(target=self._video_loop, daemon=True).start()
         threading.Thread(target=self._mavlink_loop, args=(mavlink_port, sysid), daemon=True).start()
+
+    def _open_log(self, name):
+        self._logf = open(self.out / name, "w")
+        return self._logf
 
     # called by the backend after every physics step (must not block)
     def on_state(self, state):
@@ -71,6 +77,7 @@ class SimSensorHub:
         if rng is not None:
             v = float(rng[0])
             self.range_m = v if 0.0 < v < RANGEFINDER["configuration"]["LaserMaxDistance"] - 1e-3 else None
+            self._range_seq += 1
 
     def tilt_from_pwm(self, pwm16) -> Optional[float]:
         return C.decode_tilt_deg(pwm16[C.ACCESSORY_OUTPUTS["camera_tilt"] - 1])
@@ -85,7 +92,8 @@ class SimSensorHub:
             try:
                 self.ffmpeg.stdin.write(f.tobytes())
                 self.frames_out += 1
-            except (BrokenPipeError, ValueError):
+            except (BrokenPipeError, ValueError) as e:
+                self.errors.append(f"video thread stopped: {e!r}")
                 return
 
     def _mavlink_loop(self, port, sysid):
@@ -97,19 +105,22 @@ class SimSensorHub:
             def write(self, d):
                 s.sendto(bytes(d), ("127.0.0.1", port))
         mav = mavutil.mavlink.MAVLink(W(), srcSystem=sysid, srcComponent=194)   # BlueOS ping service id
-        t0 = time.monotonic()
+        # Fields as BlueOS' ping service (core/services/ping/ping1d_mavlink.py): min 20 cm, max 12000 cm,
+        # covariance 255, ULTRASOUND, PITCH_270, fov 0.52 rad, sent only for new measurements (<= 10 Hz).
+        # Deviation: with no echo nothing is sent (BlueOS forwards the raw reading with low quality).
+        t0, last = time.monotonic(), -1
         while not self._stop.is_set():
-            r = self.range_m
-            t_ms = int((time.monotonic() - t0) * 1000)
-            cur = int(round(r * 100)) if r is not None else 0
-            quality = 100 if r is not None else 1       # 1 = invalid (MAVLink signal_quality)
-            try:
-                mav.distance_sensor_send(t_ms, 20, 5000, cur, mavutil.mavlink.MAV_DISTANCE_SENSOR_ULTRASOUND,
-                                         1, mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, 0,
-                                         0, 0, [0, 0, 0, 0], quality)
-            except OSError:
-                pass
-            time.sleep(0.2)
+            seq, r = self._range_seq, self.range_m
+            if seq != last and r is not None:
+                last = seq
+                try:
+                    mav.distance_sensor_send(int((time.monotonic() - t0) * 1000), 20, 12000, int(round(r * 100)),
+                                             mavutil.mavlink.MAV_DISTANCE_SENSOR_ULTRASOUND, 1,
+                                             mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, 255,
+                                             0.52, 0.52, [0, 0, 0, 0], 100)
+                except OSError as e:
+                    self.errors.append(f"distance_sensor: {e!r}")
+            time.sleep(0.05)
 
     def close(self):
         self._stop.set()
@@ -119,4 +130,9 @@ class SimSensorHub:
                 self.ffmpeg.stdin.close()
             except Exception:  # noqa: BLE001
                 pass
-            self.ffmpeg.wait(5)
+            try:
+                self.ffmpeg.wait(5)
+            except subprocess.TimeoutExpired:
+                self.ffmpeg.kill()
+                self.ffmpeg.wait(5)
+            self._logf.close()

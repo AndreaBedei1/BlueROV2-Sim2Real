@@ -12,6 +12,7 @@ dependencies = ["numpy"]
 [project.optional-dependencies]
 sim = ["holoocean @ git+https://github.com/byu-holoocean/HoloOcean.git@v2.3.0#subdirectory=client"]
 test = ["pytest", "pymavlink==2.4.41", "psutil"]
+phase3 = ["pymavlink==2.4.41", "bluerobotics-ping==0.2.5", "pillow"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -293,6 +293,8 @@ class VehicleClient:
         return CommandResult(name, CommandStatus.REJECTED_LOCALLY, why)
 
     def _send(self, fn, *args):
+        if self.read_only:
+            raise ReadOnlyViolation("read-only profile: send attempted")
         with self._lock:
             fn(*args)
 

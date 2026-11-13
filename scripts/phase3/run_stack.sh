@@ -46,7 +46,7 @@ fi
 for p in $((5760 + 10*INSTANCE)) $((5762 + 10*INSTANCE)) $((5763 + 10*INSTANCE)) 5880; do
   ss -Htln | awk '{print $4}' | grep -Eq "[:.]$p\$" && die "TCP port $p in use"
 done
-for p in $((9002 + 10*INSTANCE)) $((5501 + 10*INSTANCE)) 14570 14580 5610; do
+for p in $((9002 + 10*INSTANCE)) $((5501 + 10*INSTANCE)) 14570 14580 5610 5611 19090; do
   ss -Huln | awk '{print $4}' | grep -Eq "[:.]$p\$" && die "UDP port $p in use"
 done
 {
@@ -56,6 +56,7 @@ done
   echo "command=$*"
   echo "repo_commit=$(git -C "$REPO" rev-parse HEAD)"
   echo "repo_dirty=$(git -C "$REPO" status --porcelain | wc -l)"
+  echo "repo_diff_sha256=$(git -C "$REPO" diff HEAD | sha256sum | cut -d' ' -f1)"
 } > "$RUN_DIR/run_manifest.txt"
 
 own_alive() { [ -n "$1" ] && [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' < "/proc/$1/cmdline" | grep -Eq -- "$2"; }
@@ -66,8 +67,9 @@ stop_own() {
   kill -s KILL "$1" 2>/dev/null || true
 }
 cleanup() {
+  trap '' INT TERM HUP          # a second Ctrl-C must not interrupt the orderly shutdown
   stop_own "${CMD_PID:-}" "." TERM 5
-  stop_own "$(cat "$RUN_DIR/qgc/qgc.pid" 2>/dev/null)" "AppRun|QGroundControl" TERM 10
+  stop_own "$(cat "$RUN_DIR/qgc/qgc.pid" 2>/dev/null)" "squashfs-root/QGroundControl" TERM 10
   stop_own "$(cat "$RUN_DIR/display/xorg.pid" 2>/dev/null)" "Xorg :" TERM 5
   stop_own "${ROUTER_PID:-}" run_router.py TERM 5
   stop_own "${SITL_PID:-}" "run_sitl.sh|ardusub" TERM 5
@@ -83,7 +85,7 @@ trap 'exit 130' INT TERM HUP
 "$PY" "$REPO/scripts/run_bridge.py" --backend "$BACKEND" --out "$RUN_DIR/bridge" \
   --rate "$RATE" --instance "$INSTANCE" --boot-hold "$BOOT_HOLD" ${BRIDGE_ARGS:-} > "$RUN_DIR/bridge.log" 2>&1 &
 BRIDGE_PID=$!
-"$PY" "$REPO/scripts/monitor_resources.py" --pids $BRIDGE_PID --out "$RUN_DIR/resources.csv" &
+"$PY" "$REPO/scripts/monitor_resources.py" --pids $BRIDGE_PID $$ --out "$RUN_DIR/resources.csv" &
 MON_PID=$!
 for _ in $(seq 1 180); do
   [ -f "$RUN_DIR/bridge/ready" ] && break
@@ -108,16 +110,30 @@ mkdir -p "$RUN_DIR/router"
 "$PY" "$REPO/scripts/phase3/run_router.py" --instance "$INSTANCE" --tlog "$RUN_DIR/router/traffic.tlog" \
   > "$RUN_DIR/router.log" 2>&1 &
 ROUTER_PID=$!
-for _ in $(seq 1 60); do [ -f "$RUN_DIR/router/traffic.ready" ] && break; sleep 0.5; done
+for _ in $(seq 1 60); do
+  [ -f "$RUN_DIR/router/traffic.ready" ] && break
+  own_alive $ROUTER_PID run_router.py || { cat "$RUN_DIR/router.log" >&2; die "router exited"; }
+  sleep 0.5
+done
 [ -f "$RUN_DIR/router/traffic.ready" ] || die "router not ready"
 
 # QGroundControl ----------------------------------------------------------------------
 if [ "$QGC" = private ]; then
-  eval "$("$REPO/scripts/qgc/private_display.sh" "$RUN_DIR/display" "${QGC_DISPLAY_NUM:-77}" | sed 's/^/export /')"
+  OUT=$("$REPO/scripts/qgc/private_display.sh" "$RUN_DIR/display" "${QGC_DISPLAY_NUM:-77}") \
+    || die "private display failed (no fallback to another display)"
+  DISPLAY=$(sed -n 's/^DISPLAY=\([^ ]*\) .*/\1/p' <<<"$OUT")
+  XAUTHORITY=$(sed -n 's/.* XAUTHORITY=\(.*\)$/\1/p' <<<"$OUT")
+  [ -n "$DISPLAY" ] && [ "$XAUTHORITY" = "$RUN_DIR/display/Xauthority" ] || die "unexpected private display output"
+  export DISPLAY XAUTHORITY
 fi
 if [ "$QGC" != none ]; then
-  "$REPO/scripts/qgc/run_qgc_sim.sh" "$RUN_DIR/qgc" 5880
+  "$REPO/scripts/qgc/run_qgc_sim.sh" "$RUN_DIR/qgc" 5880 || die "QGroundControl start failed"
   echo "qgc_display=$DISPLAY" >> "$RUN_DIR/run_manifest.txt"
+  # isolation is enforced, not only configured: QGC must not listen on the vehicle's UDP 14550
+  sleep 15
+  QPID=$(cat "$RUN_DIR/qgc/qgc.pid")
+  if ss -Hulnp 2>/dev/null | grep -E ":14550 " | grep -q "pid=$QPID,"; then die "QGroundControl listens on UDP 14550"; fi
+  echo "qgc_udp14550_listener=none" >> "$RUN_DIR/run_manifest.txt"
 fi
 echo "bridge_pid=$BRIDGE_PID sitl_pid=$SITL_PID router_pid=$ROUTER_PID engine_pid=$(cat "$RUN_DIR/bridge/engine.pid" 2>/dev/null)" >> "$RUN_DIR/run_manifest.txt"
 echo "run_stack: ready (QGC=$QGC). MAVLink for clients: udp 127.0.0.1:14570 (listen), QGC: tcp 127.0.0.1:5880"

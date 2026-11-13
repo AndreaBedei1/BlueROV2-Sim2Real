@@ -59,12 +59,14 @@ def main():
     samples = []
     c.set_mode("MANUAL")
     c.arm()
-    for z in (500, 100, 500, 900, 500):        # hold, descend, hold, ascend, hold (pilot sticks)
+    for k, z in enumerate((500, 100, 500, 900, 500)):    # hold, descend, hold, ascend, hold (pilot sticks)
+        phase = f"{'hold' if z == 500 else 'move'}{k}"
         c.set_sticks(z=z)
-        t_end = time.time() + 3
-        while time.time() < t_end:
+        t_phase = time.time()
+        while time.time() < t_phase + 3:
             d = p.get_distance()
-            samples.append({"ping_mm": d["distance"] if d else None, "conf": d["confidence"] if d else None,
+            samples.append({"phase": phase, "t_in_phase": round(time.time() - t_phase, 2),
+                            "ping_mm": d["distance"] if d else None, "conf": d["confidence"] if d else None,
                             "depth_m": c.obs.get("depth_m"), "mav_range_m": c.obs.get("rangefinder_m")})
             time.sleep(0.25)
     c.set_sticks()
@@ -73,7 +75,7 @@ def main():
     # floor depth = vehicle depth + Ping1D altitude must be constant. Compare only the last
     # samples of each HOLD phase: during motion the telemetry depth, the rangefinder (10 Hz) and
     # the Ping request are not simultaneous (0.5 m/s x 0.3 s ~ 0.15 m).
-    holds = [samples[i:i + 12][-6:] for i in (0, 24, 48)]
+    holds = [[s for s in samples if s["phase"] == h and s["t_in_phase"] >= 1.5] for h in ("hold0", "hold2", "hold4")]
     floor = [s["ping_mm"] / 1000 + s["depth_m"] for h in holds for s in h
              if s["ping_mm"] and s["conf"] == 100 and s["depth_m"] is not None]
     dep = [s["depth_m"] for h in holds for s in h if s["depth_m"] is not None]
@@ -94,9 +96,14 @@ def main():
     time.sleep(1.5)
     down = snapshot(OUT / "camera_tilt_down.png")
     c.camera_tilt("center", hold_s=0.3)
-    check("camera_tilt_changes_rendered_view", abs(up - down) > 3, mean_luma_up=round(up, 1),
-          mean_luma_down=round(down, 1), mount_tilt_deg=c.obs.get("mount_tilt_deg"),
-          note="direction (up looks towards the brighter surface) recorded for review")
+    from PIL import Image
+    import numpy as np
+    a_up = np.asarray(Image.open(OUT / "camera_tilt_up.png").convert("L")).astype(float)
+    a_dn = np.asarray(Image.open(OUT / "camera_tilt_down.png").convert("L")).astype(float)
+    check("camera_tilt_changes_rendered_view", float(np.abs(a_up - a_dn).mean()) > 5,
+          mean_abs_pixel_diff=round(float(np.abs(a_up - a_dn).mean()), 1),
+          mount_tilt_deg=c.obs.get("mount_tilt_deg"),
+          note="DIRECTION is verified by inspecting camera_tilt_up/down.png (luma is not a reliable cue)")
     c.close()
     (OUT / "sensor_check.json").write_text(json.dumps({"checks": checks, "samples": samples[:200]}, indent=1, default=str))
     print(f"sensor check: {sum(x['pass'] for x in checks)}/{len(checks)} passed")

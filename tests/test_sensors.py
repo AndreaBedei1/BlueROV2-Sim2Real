@@ -11,8 +11,10 @@ from bluerov2_sim2real.sensors import ping_protocol as pp
 from bluerov2_sim2real.sensors import surveyor as sv
 from bluerov2_sim2real.sensors.ping1d import Ping1DAdapter
 
-REAL_SVLOG = Path("/data/Andrea/RobertoMiddleware/Registrazioni_Rover_2026-10-19/sonar/"
-                  "LAGO_SONAR_TEST__2026-10-19-11-18.svlog")   # private lab data, never committed
+import os
+
+# private laboratory recording, never committed: set BLUEROV2_PRIVATE_SVLOG to run the real-data test
+REAL_SVLOG = Path(os.environ.get("BLUEROV2_PRIVATE_SVLOG", "/nonexistent.svlog"))
 
 
 def free_port(kind=socket.SOCK_STREAM):
@@ -43,7 +45,7 @@ def test_parser_rejects_bad_checksum_and_resyncs():
 def _atof_frame(pwr_ms, n=3):
     pts = b"".join(struct.pack("<ffII", -0.5 + 0.5 * k, 0.004, 0, 0) for k in range(n))
     head = struct.pack("<IQffIIfIHH", pwr_ms, 0, 0.1, 1500.0, pwr_ms // 100, 240000, 1e-4, 0, n, 0)
-    return pp.encode(sv.ATOF_POINT_DATA, head + pts)
+    return pp.encode(sv.ATOF_POINT_DATA, head + pts, src=1)
 
 
 def test_atof_decoding_matches_brping():
@@ -66,10 +68,10 @@ def test_set_ping_parameters_matches_brping_layout():
 
 
 def test_replay_is_byte_exact_and_waits_for_ping_enable(tmp_path):
-    frames = [pp.encode(sv.JSON_WRAPPER, b'{"session_id": 1}'), _atof_frame(1000),
-              pp.encode(3009, bytes(range(200))), _atof_frame(1100)]     # 3009: unknown, kept raw
+    host = pp.encode(sv.JSON_WRAPPER, b'{"session_id": 1}', src=0)          # SonarView host frame
+    device = [_atof_frame(1000), pp.encode(3009, bytes(range(200)), src=1), _atof_frame(1100)]
     log = tmp_path / "x.svlog"
-    log.write_bytes(b"".join(frames))
+    log.write_bytes(host + b"".join(device))
     port = free_port()
     srv = sv.ReplayServer(log, port, speed=0)
     th = threading.Thread(target=srv.serve_one, daemon=True)
@@ -80,9 +82,10 @@ def test_replay_is_byte_exact_and_waits_for_ping_enable(tmp_path):
         c.recv(10)                               # nothing before ping_enable
     c.sendall(sv.set_ping_parameters(True))
     got = b""
-    while len(got) < len(log.read_bytes()):
+    expected = b"".join(device)                  # device frames only, unchanged; host frame dropped
+    while len(got) < len(expected):
         got += c.recv(65536)
-    assert got == log.read_bytes() and srv.sent_frames == 4
+    assert got == expected and srv.sent_frames == 3
     c.close()
     th.join(2)
     srv.close()
@@ -109,6 +112,7 @@ def test_real_svlog_parses_and_replays_exactly(tmp_path):
     th.start()
     c = socket.create_connection(("127.0.0.1", port))
     expected = b"".join(fr.raw for fr in srv.frames)
+    assert all(fr.src == 1 for fr in srv.frames)
     got = b""
     c.settimeout(2)
     while len(got) < len(expected):

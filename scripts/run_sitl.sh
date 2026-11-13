@@ -14,6 +14,7 @@
 set -euo pipefail
 RUN_DIR=${1:?usage: run_sitl.sh <run_dir> [instance]}
 INSTANCE=${2:-7}
+SITL_EXTRA_DEFAULTS=${SITL_EXTRA_DEFAULTS:-}   # optional (Phase 3); empty for Phase 2
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 AP=${ARDUPILOT_DIR:?set ARDUPILOT_DIR to the ArduSub-4.1.2 checkout}
 BIN="$AP/build/sitl/bin/ardusub"

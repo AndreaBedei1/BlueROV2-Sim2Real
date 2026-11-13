@@ -37,6 +37,7 @@ autoConnectLibrePilot=false
 autoConnectRTKGPS=false
 autoConnectZeroConf=false
 autoConnectNmeaPort=Disabled
+udpListenPort=0
 
 [LinkConfigurations]
 count=1
@@ -53,6 +54,8 @@ udpUrl=127.0.0.1:$VIDEO_PORT
 INI
 echo "qgc_appimage_sha256=$(sha256sum "$QGC_APPDIR/../QGroundControl.AppImage" 2>/dev/null | cut -d' ' -f1)" > "$STATE/qgc_manifest.txt"
 cd "$STATE"
-HOME="$STATE/home" "$QGC_APPDIR/AppRun" > "$STATE/qgc.log" 2>&1 &
+# the QGroundControl binary directly (AppRun would leave it as an untracked child)
+env -u XDG_CONFIG_HOME -u XDG_DATA_HOME -u XDG_CACHE_HOME HOME="$STATE/home" \
+  "$QGC_APPDIR/QGroundControl" > "$STATE/qgc.log" 2>&1 &
 echo $! > "$STATE/qgc.pid"
 echo "QGroundControl started (pid $(cat "$STATE/qgc.pid")), link TCP 127.0.0.1:$PORT"

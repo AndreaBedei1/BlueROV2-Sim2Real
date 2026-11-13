@@ -128,13 +128,18 @@ class HoloOceanBackend:
         """Accessory outputs (Phase 3): only the camera tilt has a simulated effect."""
         if self.sensor_hub is None:
             return
-        tilt = self.sensor_hub.tilt_from_pwm(pwm16)
-        if tilt is not None and (self._tilt_applied is None or abs(tilt - self._tilt_applied) > 0.5):
-            cam = self.agent.sensors.get("RGBCamera")
-            if cam is not None:
-                cam.rotate([0.0, -tilt, 0.0])     # sign convention checked in docs/phase3 (camera run)
-                self._tilt_applied = tilt
-                self.sensor_hub.tilt_deg = tilt
+        try:
+            tilt = self.sensor_hub.tilt_from_pwm(pwm16)
+            if tilt is not None and (self._tilt_applied is None or abs(tilt - self._tilt_applied) > 0.5):
+                cam = self.agent.sensors.get("RGBCamera")
+                if cam is not None:
+                    # HoloOcean sensor rotation: positive pitch looks up (checked on rendered frames,
+                    # docs/phase3/IMPLEMENTATION.md); ArduSub tilt is + up.
+                    cam.rotate([0.0, tilt, 0.0])
+                    self._tilt_applied = tilt
+                    self.sensor_hub.tilt_deg = tilt
+        except Exception as e:  # noqa: BLE001 - accessories must never stop the lockstep
+            self.sensor_hub.errors.append(f"on_servo: {e!r}")
 
     def close(self):
         if self.env is not None:

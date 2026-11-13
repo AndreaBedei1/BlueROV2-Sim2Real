@@ -42,6 +42,9 @@ PING_ENABLE = 1215
 SET_PING_ENABLE = 1006
 
 DEVICE_TYPE_PING1D = 1
+# NOTE: firmware version 0.0, voltage 5000 mV, gain 0, transmit duration 100 us, revision 1 and
+# confidence 100 are PLACEHOLDERS of the simulated device, not measurements. No blanking/minimum
+# range and no profile (1300) / continuous mode; set_* and unknown requests are NACKed.
 MAX_RANGE_MM = 50_000      # Ping1D rated range
 
 
@@ -106,6 +109,9 @@ class Ping1DAdapter:
             return None
         return pp.encode(mid, p, src=self.device_id, dst=0)
 
+    def _nack(self, mid: int, text: str) -> bytes:
+        return pp.encode(2, struct.pack("<H", mid) + text.encode() + b"\x00", src=self.device_id, dst=0)
+
     def run(self):
         parser = pp.Parser()
         while not self.stop.is_set():
@@ -124,10 +130,10 @@ class Ping1DAdapter:
                 elif not f.payload:
                     want = f.message_id          # legacy Ping1D request: empty message with the wanted id
                 else:
-                    continue                     # set_* commands are not emulated (read-only sensor model)
+                    self.sock.sendto(self._nack(f.message_id, "set commands not emulated"), addr)
+                    continue
                 r = self._reply(want)
-                if r:
-                    self.sock.sendto(r, addr)
+                self.sock.sendto(r if r else self._nack(want, "not supported by the simulated Ping1D"), addr)
 
     def close(self):
         self.stop.set()
